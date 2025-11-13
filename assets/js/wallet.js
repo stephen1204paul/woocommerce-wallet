@@ -64,9 +64,9 @@
         // Highlight quick amount button on hover
         $(document).on('mouseenter', '.wallet-quick-amount-btn', function() {
             $(this).css({
-                'background': '#667eea',
+                'background': '#ff8c00',
                 'color': '#fff',
-                'border-color': '#667eea'
+                'border-color': '#ff8c00'
             });
         }).on('mouseleave', '.wallet-quick-amount-btn', function() {
             $(this).css({
