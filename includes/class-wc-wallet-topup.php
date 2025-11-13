@@ -129,28 +129,57 @@ class WC_Wallet_Topup {
             }
         }
 
-        // Create new product
-        $product = new WC_Product_Virtual();
-        $product->set_name(sprintf(__('Wallet Top-up (%s)', 'wc-wallet'), wc_price($amount)));
-        $product->set_status('private');
-        $product->set_catalog_visibility('hidden');
-        $product->set_price($amount);
-        $product->set_regular_price($amount);
-        $product->set_sold_individually(true);
-        $product->set_virtual(true);
-
-        $product_id = $product->save();
+        // If product doesn't exist, try to create it
+        $product_id = $this->create_virtual_product($amount);
 
         if ($product_id) {
-            update_option('wc_wallet_topup_product_id', $product_id);
-
-            // Mark product as wallet topup
-            update_post_meta($product_id, '_is_wallet_topup_product', 'yes');
-
-            return $product;
+            return wc_get_product($product_id);
         }
 
         return false;
+    }
+
+    /**
+     * Create virtual product using WooCommerce functions
+     */
+    private function create_virtual_product($amount) {
+        // Create post
+        $product_data = array(
+            'post_title'   => sprintf(__('Wallet Top-up', 'wc-wallet')),
+            'post_content' => __('Virtual product for wallet top-up. This product should not be purchased directly.', 'wc-wallet'),
+            'post_status'  => 'publish',
+            'post_type'    => 'product',
+            'post_author'  => 1
+        );
+
+        $product_id = wp_insert_post($product_data);
+
+        if (is_wp_error($product_id)) {
+            return false;
+        }
+
+        // Set product as virtual
+        wp_set_object_terms($product_id, 'simple', 'product_type');
+        update_post_meta($product_id, '_virtual', 'yes');
+        update_post_meta($product_id, '_price', $amount);
+        update_post_meta($product_id, '_regular_price', $amount);
+        update_post_meta($product_id, '_sold_individually', 'yes');
+        update_post_meta($product_id, '_manage_stock', 'no');
+        update_post_meta($product_id, '_stock_status', 'instock');
+
+        // Hide from catalog
+        update_post_meta($product_id, '_visibility', 'hidden');
+        update_post_meta($product_id, '_catalog_visibility', 'hidden');
+        wp_set_object_terms($product_id, 'exclude-from-catalog', 'product_visibility');
+        wp_set_object_terms($product_id, 'exclude-from-search', 'product_visibility');
+
+        // Mark as wallet topup product
+        update_post_meta($product_id, '_is_wallet_topup_product', 'yes');
+
+        // Save product ID
+        update_option('wc_wallet_topup_product_id', $product_id);
+
+        return $product_id;
     }
 
     /**
