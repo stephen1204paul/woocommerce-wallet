@@ -1,0 +1,49 @@
+/**
+ * WooCommerce Wallet Admin Styles
+ */
+
+.wc-wallet-settings {
+    max-width: 1000px;
+}
+
+.wc-wallet-settings h1 {
+    margin-bottom: 20px;
+}
+
+.wc-wallet-settings .form-table {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.wc-wallet-settings .form-table th {
+    width: 250px;
+    font-weight: 600;
+}
+
+.wc-wallet-settings .widefat {
+    margin-top: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.wc-wallet-settings .widefat thead {
+    background: #f5f5f5;
+}
+
+.wc-wallet-settings .widefat th {
+    padding: 15px;
+    font-weight: 600;
+}
+
+.wc-wallet-settings .widefat td {
+    padding: 15px;
+}
+
+.wc-wallet-settings hr {
+    margin: 40px 0;
+    border: none;
+    border-top: 1px solid #e5e5e5;
+}
