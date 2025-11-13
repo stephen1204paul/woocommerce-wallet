@@ -28,25 +28,8 @@ class WC_Wallet_Frontend {
      * Constructor
      */
     public function __construct() {
-        add_action('init', array($this, 'register_endpoint'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
-        add_filter('woocommerce_get_query_vars', array($this, 'add_query_vars'));
         add_filter('woocommerce_checkout_fields', array($this, 'add_wallet_balance_notice'));
-    }
-
-    /**
-     * Register wallet endpoint
-     */
-    public function register_endpoint() {
-        add_rewrite_endpoint('wallet', EP_ROOT | EP_PAGES);
-    }
-
-    /**
-     * Add query vars
-     */
-    public function add_query_vars($vars) {
-        $vars['wallet'] = 'wallet';
-        return $vars;
     }
 
     /**

@@ -101,6 +101,7 @@ final class WC_Wallet {
         add_action('init', array($this, 'init'), 0);
         add_action('woocommerce_init', array($this, 'woocommerce_init'));
         add_filter('woocommerce_payment_gateways', array($this, 'add_wallet_gateway'));
+        add_filter('woocommerce_get_query_vars', array($this, 'add_query_vars'));
     }
 
     /**
@@ -109,6 +110,17 @@ final class WC_Wallet {
     public function init() {
         // Load text domain
         load_plugin_textdomain('wc-wallet', false, dirname(plugin_basename(__FILE__)) . '/languages');
+
+        // Register wallet endpoint
+        add_rewrite_endpoint('wallet', EP_ROOT | EP_PAGES);
+    }
+
+    /**
+     * Add query vars
+     */
+    public function add_query_vars($vars) {
+        $vars['wallet'] = 'wallet';
+        return $vars;
     }
 
     /**
@@ -153,6 +165,9 @@ final class WC_Wallet {
         add_option('wc_wallet_enable', 'yes');
         add_option('wc_wallet_min_topup', 10);
         add_option('wc_wallet_max_topup', 10000);
+
+        // Register endpoint
+        add_rewrite_endpoint('wallet', EP_ROOT | EP_PAGES);
 
         // Flush rewrite rules
         flush_rewrite_rules();
