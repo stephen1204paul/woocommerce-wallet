@@ -79,7 +79,6 @@ final class WC_Wallet {
         require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-manager.php';
         require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-transaction.php';
         require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-topup.php';
-        require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-gateway.php';
 
         // Admin includes
         if (is_admin()) {
@@ -134,6 +133,10 @@ final class WC_Wallet {
      * Add Wallet Payment Gateway
      */
     public function add_wallet_gateway($gateways) {
+        // Load gateway class only when WooCommerce payment gateways are being loaded
+        if (!class_exists('WC_Wallet_Gateway')) {
+            require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-gateway.php';
+        }
         $gateways[] = 'WC_Wallet_Gateway';
         return $gateways;
     }
