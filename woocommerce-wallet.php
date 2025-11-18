@@ -79,6 +79,7 @@ final class WC_Wallet {
         require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-manager.php';
         require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-transaction.php';
         require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-topup.php';
+        require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-cashback.php';
 
         // Admin includes
         if (is_admin()) {
@@ -129,6 +130,9 @@ final class WC_Wallet {
     public function woocommerce_init() {
         // Initialize wallet manager
         WC_Wallet_Manager::instance();
+
+        // Initialize cashback
+        WC_Wallet_Cashback::instance();
 
         // Initialize frontend
         if (!is_admin()) {

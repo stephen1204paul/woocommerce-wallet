@@ -38,6 +38,14 @@ A comprehensive wallet system for WooCommerce that allows customers to add funds
 - Refund support for partial and full refunds
 - Transaction records for all refunds
 
+### 7. Cashback Rewards System
+- Role-based cashback percentages
+- Automatic cashback crediting on order completion
+- Configurable cashback calculation (include/exclude shipping and taxes)
+- Maximum cashback limit per order
+- Cashback info displayed on wallet page
+- Excludes wallet top-up orders from cashback
+
 ## Installation
 
 1. Upload the `woocommerce-wallet` folder to the `/wp-content/plugins/` directory
@@ -53,6 +61,17 @@ Navigate to **WooCommerce → Wallet** to configure:
 - **Enable Wallet**: Turn the wallet system on/off
 - **Minimum Top-up Amount**: Set the minimum amount customers can add (default: 10)
 - **Maximum Top-up Amount**: Set the maximum amount customers can add (default: 10000)
+
+### Cashback Settings
+Navigate to **WooCommerce → Wallet** (Cashback Settings section) to configure:
+
+- **Enable Cashback**: Turn the cashback system on/off
+- **Maximum Cashback Per Order**: Set a maximum cashback amount per order (0 for unlimited)
+- **Include Shipping in Cashback**: Whether to include shipping costs in cashback calculation
+- **Include Taxes in Cashback**: Whether to include taxes in cashback calculation
+- **Cashback Percentage by User Role**: Set different cashback percentages for each user role
+  - Examples: Customer (5%), Subscriber (3%), Wholesale (10%)
+  - If a user has multiple roles, the highest percentage is used
 
 ### Payment Gateway Settings
 Navigate to **WooCommerce → Settings → Payments → Wallet** to configure:
@@ -84,6 +103,12 @@ Navigate to **WooCommerce → Settings → Payments → Wallet** to configure:
 1. Go to **My Account → My Wallet**
 2. Scroll to "Transaction History"
 3. View all credits and debits with details
+
+#### Earning Cashback
+1. Cashback is automatically credited to your wallet after order completion
+2. View your cashback rate on the **My Wallet** page
+3. Cashback appears in transaction history as a credit
+4. Cashback rate depends on your user role (set by admin)
 
 ### For Administrators
 

@@ -59,6 +59,18 @@ class WC_Wallet_Admin {
         register_setting('wc_wallet_settings', 'wc_wallet_enable');
         register_setting('wc_wallet_settings', 'wc_wallet_min_topup');
         register_setting('wc_wallet_settings', 'wc_wallet_max_topup');
+
+        // Cashback settings
+        register_setting('wc_wallet_settings', 'wc_wallet_cashback_enable');
+        register_setting('wc_wallet_settings', 'wc_wallet_cashback_max_amount');
+        register_setting('wc_wallet_settings', 'wc_wallet_cashback_include_shipping');
+        register_setting('wc_wallet_settings', 'wc_wallet_cashback_include_taxes');
+
+        // Register cashback percentage for each role
+        $roles = WC_Wallet_Cashback::get_user_roles();
+        foreach ($roles as $role_key => $role_name) {
+            register_setting('wc_wallet_settings', 'wc_wallet_cashback_' . $role_key);
+        }
     }
 
     /**
@@ -105,6 +117,83 @@ class WC_Wallet_Admin {
                             <p class="description"><?php _e('Maximum amount users can top up to their wallet.', 'wc-wallet'); ?></p>
                         </td>
                     </tr>
+                </table>
+
+                <h2><?php _e('Cashback Settings', 'wc-wallet'); ?></h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="wc_wallet_cashback_enable"><?php _e('Enable Cashback', 'wc-wallet'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" name="wc_wallet_cashback_enable" id="wc_wallet_cashback_enable" value="yes" <?php checked(get_option('wc_wallet_cashback_enable'), 'yes'); ?> />
+                            <p class="description"><?php _e('Enable cashback rewards for customer purchases.', 'wc-wallet'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="wc_wallet_cashback_max_amount"><?php _e('Maximum Cashback Per Order', 'wc-wallet'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="wc_wallet_cashback_max_amount" id="wc_wallet_cashback_max_amount" value="<?php echo esc_attr(get_option('wc_wallet_cashback_max_amount', 0)); ?>" min="0" step="0.01" class="regular-text" />
+                            <p class="description"><?php _e('Maximum cashback amount per order (0 for unlimited).', 'wc-wallet'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="wc_wallet_cashback_include_shipping"><?php _e('Include Shipping in Cashback', 'wc-wallet'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" name="wc_wallet_cashback_include_shipping" id="wc_wallet_cashback_include_shipping" value="yes" <?php checked(get_option('wc_wallet_cashback_include_shipping'), 'yes'); ?> />
+                            <p class="description"><?php _e('Include shipping costs when calculating cashback.', 'wc-wallet'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="wc_wallet_cashback_include_taxes"><?php _e('Include Taxes in Cashback', 'wc-wallet'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" name="wc_wallet_cashback_include_taxes" id="wc_wallet_cashback_include_taxes" value="yes" <?php checked(get_option('wc_wallet_cashback_include_taxes'), 'yes'); ?> />
+                            <p class="description"><?php _e('Include taxes when calculating cashback.', 'wc-wallet'); ?></p>
+                        </td>
+                    </tr>
+                </table>
+
+                <h3><?php _e('Cashback Percentage by User Role', 'wc-wallet'); ?></h3>
+                <p><?php _e('Set the cashback percentage for each user role. If a user has multiple roles, the highest percentage will be used.', 'wc-wallet'); ?></p>
+                <table class="form-table">
+                    <?php
+                    $roles = WC_Wallet_Cashback::get_user_roles();
+                    foreach ($roles as $role_key => $role_name) :
+                        $option_name = 'wc_wallet_cashback_' . $role_key;
+                        $percentage = get_option($option_name, 0);
+                    ?>
+                    <tr>
+                        <th scope="row">
+                            <label for="<?php echo esc_attr($option_name); ?>">
+                                <?php echo esc_html($role_name); ?>
+                            </label>
+                        </th>
+                        <td>
+                            <input
+                                type="number"
+                                name="<?php echo esc_attr($option_name); ?>"
+                                id="<?php echo esc_attr($option_name); ?>"
+                                value="<?php echo esc_attr($percentage); ?>"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                class="small-text"
+                            /> %
+                            <p class="description">
+                                <?php echo sprintf(__('Cashback percentage for %s role', 'wc-wallet'), strtolower($role_name)); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
                 </table>
 
                 <?php submit_button(); ?>

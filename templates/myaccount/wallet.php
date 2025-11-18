@@ -13,6 +13,11 @@ $balance = $wallet_manager->get_wallet_balance($user_id);
 $min_topup = WC_Wallet_Topup::get_min_amount();
 $max_topup = WC_Wallet_Topup::get_max_amount();
 
+// Get cashback info
+$cashback_enabled = get_option('wc_wallet_cashback_enable') === 'yes';
+$cashback_manager = WC_Wallet_Cashback::instance();
+$cashback_percentage = $cashback_manager->get_user_cashback_percentage($user_id);
+
 // Get transactions
 $transactions = WC_Wallet_Database::get_transactions($user_id, 20);
 $transaction_count = WC_Wallet_Database::get_transaction_count($user_id);
@@ -28,6 +33,12 @@ $transaction_count = WC_Wallet_Database::get_transaction_count($user_id);
             <div class="wallet-balance-amount">
                 <?php echo wc_price($balance); ?>
             </div>
+            <?php if ($cashback_enabled && $cashback_percentage > 0) : ?>
+                <div class="wallet-cashback-info">
+                    <span class="cashback-icon">🎁</span>
+                    <?php echo sprintf(__('Earn %s%% cashback on purchases', 'wc-wallet'), number_format($cashback_percentage, 2)); ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 

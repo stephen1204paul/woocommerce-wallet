@@ -35,6 +35,19 @@
     margin: 0;
 }
 
+.wallet-cashback-info {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: 16px;
+    opacity: 0.95;
+}
+
+.wallet-cashback-info .cashback-icon {
+    margin-right: 5px;
+    font-size: 18px;
+}
+
 /* Top-up Section */
 .wallet-topup-section {
     background: #f9f9f9;
