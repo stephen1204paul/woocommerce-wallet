@@ -283,13 +283,14 @@ class WC_Wallet_Admin {
             <tr>
                 <th><label><?php _e('Current Wallet Balance', 'wc-wallet'); ?></label></th>
                 <td>
-                    <strong><?php echo wc_price($balance); ?></strong>
+                    <strong><?php echo wp_kses_post(wc_price($balance)); ?></strong>
                 </td>
             </tr>
 
             <tr>
                 <th><label for="wallet_adjustment_amount"><?php _e('Adjust Wallet Balance', 'wc-wallet'); ?></label></th>
                 <td>
+                    <?php wp_nonce_field('wallet_adjustment_' . $user->ID, 'wallet_adjustment_nonce'); ?>
                     <input type="number" name="wallet_adjustment_amount" id="wallet_adjustment_amount" step="0.01" class="regular-text" placeholder="0.00" />
                     <p class="description"><?php _e('Enter a positive value to credit or negative value to debit. Leave blank for no change.', 'wc-wallet'); ?></p>
                 </td>
@@ -314,11 +315,17 @@ class WC_Wallet_Admin {
             return;
         }
 
+        // CSRF protection: Verify nonce
+        if (!isset($_POST['wallet_adjustment_nonce']) || !wp_verify_nonce($_POST['wallet_adjustment_nonce'], 'wallet_adjustment_' . $user_id)) {
+            return;
+        }
+
         if (!isset($_POST['wallet_adjustment_amount']) || $_POST['wallet_adjustment_amount'] === '') {
             return;
         }
 
-        $amount = floatval($_POST['wallet_adjustment_amount']);
+        // Sanitize and validate input
+        $amount = floatval(sanitize_text_field($_POST['wallet_adjustment_amount']));
 
         if ($amount == 0) {
             return;

@@ -28,46 +28,59 @@ class WC_Wallet_Cashback {
      * Constructor
      */
     public function __construct() {
+        // Only hook to completed status to avoid duplicate processing
         add_action('woocommerce_order_status_completed', array($this, 'process_cashback'), 20);
-        add_action('woocommerce_order_status_processing', array($this, 'process_cashback'), 20);
     }
 
     /**
      * Process cashback for completed orders
      */
     public function process_cashback($order_id) {
+        // Prevent race conditions with transient lock
+        $lock_key = 'wallet_cashback_lock_' . $order_id;
+        if (get_transient($lock_key)) {
+            return; // Already being processed
+        }
+        set_transient($lock_key, true, 60); // 60 second lock
+
         // Check if cashback is enabled
         if (get_option('wc_wallet_cashback_enable') !== 'yes') {
+            delete_transient($lock_key);
             return;
         }
 
         $order = wc_get_order($order_id);
 
-        if (!$order) {
+        if (!$order || !is_a($order, 'WC_Order')) {
+            delete_transient($lock_key);
             return;
         }
 
         // Check if cashback already processed
         $cashback_processed = $order->get_meta('_wallet_cashback_processed');
         if ($cashback_processed === 'yes') {
+            delete_transient($lock_key);
             return;
         }
 
         // Don't give cashback for wallet top-up orders
         $is_wallet_topup = $order->get_meta('_is_wallet_topup');
         if ($is_wallet_topup === 'yes') {
+            delete_transient($lock_key);
             return;
         }
 
         // Don't give cashback if paid with wallet (optional - you can change this)
         // Uncomment the lines below if you don't want cashback on wallet payments
         // if ($order->get_payment_method() === 'wallet') {
+        //     delete_transient($lock_key);
         //     return;
         // }
 
         // Get user
         $user_id = $order->get_user_id();
         if (!$user_id) {
+            delete_transient($lock_key);
             return; // Guest checkout, no cashback
         }
 
@@ -75,6 +88,7 @@ class WC_Wallet_Cashback {
         $cashback_amount = $this->calculate_cashback($order, $user_id);
 
         if ($cashback_amount <= 0) {
+            delete_transient($lock_key);
             return;
         }
 
@@ -109,6 +123,9 @@ class WC_Wallet_Cashback {
             // Fire action for other plugins
             do_action('wc_wallet_cashback_credited', $user_id, $cashback_amount, $order_id, $transaction_id);
         }
+
+        // Release lock
+        delete_transient($lock_key);
     }
 
     /**
@@ -173,7 +190,13 @@ class WC_Wallet_Cashback {
 
         foreach ($roles as $role) {
             $percentage = get_option('wc_wallet_cashback_' . $role, 0);
+
+            // Validate percentage is numeric and within valid range
+            if (!is_numeric($percentage)) {
+                $percentage = 0;
+            }
             $percentage = floatval($percentage);
+            $percentage = max(0, min(100, $percentage)); // Ensure 0-100 range
 
             if ($percentage > $highest_percentage) {
                 $highest_percentage = $percentage;

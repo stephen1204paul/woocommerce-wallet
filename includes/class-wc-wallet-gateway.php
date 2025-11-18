@@ -78,7 +78,7 @@ class WC_Wallet_Gateway extends WC_Payment_Gateway {
      */
     public function payment_fields() {
         if ($this->description) {
-            echo wpautop(wptexturize($this->description));
+            echo wp_kses_post(wpautop(wptexturize($this->description)));
         }
 
         if (is_user_logged_in()) {
@@ -88,16 +88,16 @@ class WC_Wallet_Gateway extends WC_Payment_Gateway {
             $cart_total = WC()->cart->get_total('');
 
             echo '<div class="wallet-payment-info">';
-            echo '<p><strong>' . __('Your Wallet Balance:', 'wc-wallet') . '</strong> ' . wc_price($balance) . '</p>';
-            echo '<p><strong>' . __('Order Total:', 'wc-wallet') . '</strong> ' . wc_price($cart_total) . '</p>';
+            echo '<p><strong>' . esc_html__('Your Wallet Balance:', 'wc-wallet') . '</strong> ' . wp_kses_post(wc_price($balance)) . '</p>';
+            echo '<p><strong>' . esc_html__('Order Total:', 'wc-wallet') . '</strong> ' . wp_kses_post(wc_price($cart_total)) . '</p>';
 
             if ($balance < $cart_total) {
                 echo '<p class="wallet-insufficient-balance" style="color: #e2401c;">';
-                echo __('Insufficient wallet balance. Please top up your wallet or choose another payment method.', 'wc-wallet');
+                echo esc_html__('Insufficient wallet balance. Please top up your wallet or choose another payment method.', 'wc-wallet');
                 echo '</p>';
             } else {
                 echo '<p class="wallet-sufficient-balance" style="color: #0f834d;">';
-                echo sprintf(__('You have sufficient balance to complete this purchase. Remaining balance after purchase: %s', 'wc-wallet'), wc_price($balance - $cart_total));
+                echo sprintf(esc_html__('You have sufficient balance to complete this purchase. Remaining balance after purchase: %s', 'wc-wallet'), wp_kses_post(wc_price($balance - $cart_total)));
                 echo '</p>';
             }
             echo '</div>';

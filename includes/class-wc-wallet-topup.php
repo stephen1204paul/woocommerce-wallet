@@ -73,7 +73,8 @@ class WC_Wallet_Topup {
             return;
         }
 
-        $amount = isset($_POST['topup_amount']) ? floatval($_POST['topup_amount']) : 0;
+        // Sanitize and validate input
+        $amount = isset($_POST['topup_amount']) ? floatval(sanitize_text_field($_POST['topup_amount'])) : 0;
 
         // Validate amount
         $min_amount = get_option('wc_wallet_min_topup', 10);

@@ -105,7 +105,7 @@ class WC_Wallet_Manager {
     public function credit_wallet_on_order_complete($order_id) {
         $order = wc_get_order($order_id);
 
-        if (!$order) {
+        if (!$order || !is_a($order, 'WC_Order')) {
             return;
         }
 
@@ -153,7 +153,7 @@ class WC_Wallet_Manager {
     public function refund_to_wallet($order_id) {
         $order = wc_get_order($order_id);
 
-        if (!$order) {
+        if (!$order || !is_a($order, 'WC_Order')) {
             return;
         }
 
@@ -199,7 +199,7 @@ class WC_Wallet_Manager {
     public function refund_wallet_payment($order_id) {
         $order = wc_get_order($order_id);
 
-        if (!$order) {
+        if (!$order || !is_a($order, 'WC_Order')) {
             return;
         }
 

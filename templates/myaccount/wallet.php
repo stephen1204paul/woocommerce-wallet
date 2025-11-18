@@ -31,12 +31,12 @@ $transaction_count = WC_Wallet_Database::get_transaction_count($user_id);
         <div class="wallet-balance-card">
             <h3><?php _e('Current Balance', 'wc-wallet'); ?></h3>
             <div class="wallet-balance-amount">
-                <?php echo wc_price($balance); ?>
+                <?php echo wp_kses_post(wc_price($balance)); ?>
             </div>
             <?php if ($cashback_enabled && $cashback_percentage > 0) : ?>
                 <div class="wallet-cashback-info">
                     <span class="cashback-icon">🎁</span>
-                    <?php echo sprintf(__('Earn %s%% cashback on purchases', 'wc-wallet'), number_format($cashback_percentage, 2)); ?>
+                    <?php echo sprintf(esc_html__('Earn %s%% cashback on purchases', 'wc-wallet'), esc_html(number_format($cashback_percentage, 2))); ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -50,7 +50,7 @@ $transaction_count = WC_Wallet_Database::get_transaction_count($user_id);
 
             <div class="form-row">
                 <label for="topup_amount">
-                    <?php echo sprintf(__('Enter Amount (Min: %s, Max: %s)', 'wc-wallet'), wc_price($min_topup), wc_price($max_topup)); ?>
+                    <?php echo sprintf(esc_html__('Enter Amount (Min: %s, Max: %s)', 'wc-wallet'), wp_kses_post(wc_price($min_topup)), wp_kses_post(wc_price($max_topup))); ?>
                 </label>
                 <input
                     type="number"
@@ -110,13 +110,13 @@ $transaction_count = WC_Wallet_Database::get_transaction_count($user_id);
                             </td>
                             <td data-title="<?php _e('Amount', 'wc-wallet'); ?>" class="transaction-amount">
                                 <?php if ($trans->is_credit()) : ?>
-                                    <span class="credit-amount">+<?php echo $trans->get_formatted_amount(); ?></span>
+                                    <span class="credit-amount">+<?php echo wp_kses_post($trans->get_formatted_amount()); ?></span>
                                 <?php else : ?>
-                                    <span class="debit-amount"><?php echo $trans->get_formatted_amount(); ?></span>
+                                    <span class="debit-amount"><?php echo wp_kses_post($trans->get_formatted_amount()); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td data-title="<?php _e('Balance', 'wc-wallet'); ?>">
-                                <?php echo $trans->get_formatted_balance(); ?>
+                                <?php echo wp_kses_post($trans->get_formatted_balance()); ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
