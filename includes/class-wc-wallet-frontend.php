@@ -29,7 +29,6 @@ class WC_Wallet_Frontend {
      */
     public function __construct() {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
-        add_filter('woocommerce_checkout_fields', array($this, 'add_wallet_balance_notice'));
     }
 
     /**
@@ -48,24 +47,5 @@ class WC_Wallet_Frontend {
                 'max_topup' => WC_Wallet_Topup::get_max_amount(),
             ));
         }
-    }
-
-    /**
-     * Add wallet balance notice on checkout
-     */
-    public function add_wallet_balance_notice($fields) {
-        if (is_user_logged_in()) {
-            $wallet_manager = WC_Wallet_Manager::instance();
-            $balance = $wallet_manager->get_wallet_balance();
-
-            if ($balance > 0) {
-                wc_add_notice(
-                    sprintf(__('Your wallet balance: %s', 'wc-wallet'), wc_price($balance)),
-                    'notice'
-                );
-            }
-        }
-
-        return $fields;
     }
 }
