@@ -32,6 +32,11 @@ A comprehensive wallet system for WooCommerce that allows customers to add funds
 - Manually adjust customer wallet balances
 - View wallet statistics (total balance, users, transactions)
 - Per-user wallet management on user profile page
+- Comprehensive transaction history page with filtering and search
+- View all wallet transactions across all users
+- Filter by user, transaction type, and date range
+- Search by order ID or transaction details
+- Pagination for large transaction datasets
 
 ### 6. Automatic Refunds
 - Automatic refund to wallet for cancelled orders
@@ -127,6 +132,18 @@ Navigate to **WooCommerce → Settings → Payments → Wallet** to configure:
    - Number of users with balance
    - Total transactions
    - Total credits and debits
+
+#### Viewing All Transactions
+1. Go to **WooCommerce → Wallet Transactions**
+2. View all wallet transactions across all users
+3. Use filters to narrow results:
+   - Filter by specific user
+   - Filter by transaction type (Credit/Debit)
+   - Filter by date range
+   - Search by order ID or transaction details
+4. Click on user names to view their profile
+5. Click on order numbers to view order details
+6. View today's statistics at the top (total transactions, credits, debits)
 
 ## Database Structure
 
