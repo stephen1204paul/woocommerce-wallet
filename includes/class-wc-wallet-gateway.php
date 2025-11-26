@@ -203,7 +203,7 @@ class WC_Wallet_Gateway extends WC_Payment_Gateway {
     public function process_refund($order_id, $amount = null, $reason = '') {
         $order = wc_get_order($order_id);
 
-        if (!$order) {
+        if (!$order || !is_a($order, 'WC_Order')) {
             return new WP_Error('invalid_order', __('Invalid order.', 'wc-wallet'));
         }
 
@@ -211,6 +211,12 @@ class WC_Wallet_Gateway extends WC_Payment_Gateway {
 
         if (!$user_id) {
             return new WP_Error('invalid_user', __('Invalid user.', 'wc-wallet'));
+        }
+
+        // Check if already refunded to prevent duplicates
+        $already_refunded = $order->get_meta('_wallet_refunded');
+        if ($already_refunded === 'yes') {
+            return new WP_Error('already_refunded', __('This order has already been refunded to wallet.', 'wc-wallet'));
         }
 
         // If amount is null, refund the full order total
@@ -229,6 +235,11 @@ class WC_Wallet_Gateway extends WC_Payment_Gateway {
         );
 
         if ($transaction_id) {
+            // Mark as refunded to prevent duplicate refunds
+            $order->update_meta_data('_wallet_refunded', 'yes');
+            $order->update_meta_data('_wallet_refund_transaction_id', $transaction_id);
+            $order->save();
+
             $order->add_order_note(
                 sprintf(__('Refunded %s to wallet. Transaction ID: %s', 'wc-wallet'), wc_price($amount), $transaction_id)
             );
