@@ -473,12 +473,11 @@ class WC_Wallet_Admin {
 
             <!-- Filters -->
             <div class="tablenav top">
-                <form method="get" style="display: flex; gap: 10px; align-items: end; flex-wrap: wrap;">
-                    <input type="hidden" name="page" value="wc-wallet-transactions" />
+                <div class="alignleft actions">
+                    <form method="get" style="display: inline-block;">
+                        <input type="hidden" name="page" value="wc-wallet-transactions" />
 
-                    <div>
-                        <label for="filter_user" style="display: block; margin-bottom: 5px;"><?php _e('User', 'wc-wallet'); ?></label>
-                        <select name="filter_user" id="filter_user" style="min-width: 200px;">
+                        <select name="filter_user" id="filter_user" style="min-width: 200px; vertical-align: middle;">
                             <option value="0"><?php _e('All Users', 'wc-wallet'); ?></option>
                             <?php foreach ($users_with_wallets as $wallet_user) :
                                 $user_data = get_userdata($wallet_user->user_id);
@@ -489,37 +488,24 @@ class WC_Wallet_Admin {
                                 </option>
                             <?php endif; endforeach; ?>
                         </select>
-                    </div>
 
-                    <div>
-                        <label for="filter_type" style="display: block; margin-bottom: 5px;"><?php _e('Type', 'wc-wallet'); ?></label>
-                        <select name="filter_type" id="filter_type">
+                        <select name="filter_type" id="filter_type" style="vertical-align: middle;">
                             <option value=""><?php _e('All Types', 'wc-wallet'); ?></option>
                             <option value="credit" <?php selected($filter_type, 'credit'); ?>><?php _e('Credit', 'wc-wallet'); ?></option>
                             <option value="debit" <?php selected($filter_type, 'debit'); ?>><?php _e('Debit', 'wc-wallet'); ?></option>
                         </select>
-                    </div>
 
-                    <div>
-                        <label for="filter_date_from" style="display: block; margin-bottom: 5px;"><?php _e('From Date', 'wc-wallet'); ?></label>
-                        <input type="date" name="filter_date_from" id="filter_date_from" value="<?php echo esc_attr($filter_date_from); ?>" />
-                    </div>
+                        <input type="date" name="filter_date_from" id="filter_date_from" value="<?php echo esc_attr($filter_date_from); ?>" placeholder="<?php esc_attr_e('From Date', 'wc-wallet'); ?>" style="vertical-align: middle;" />
 
-                    <div>
-                        <label for="filter_date_to" style="display: block; margin-bottom: 5px;"><?php _e('To Date', 'wc-wallet'); ?></label>
-                        <input type="date" name="filter_date_to" id="filter_date_to" value="<?php echo esc_attr($filter_date_to); ?>" />
-                    </div>
+                        <input type="date" name="filter_date_to" id="filter_date_to" value="<?php echo esc_attr($filter_date_to); ?>" placeholder="<?php esc_attr_e('To Date', 'wc-wallet'); ?>" style="vertical-align: middle;" />
 
-                    <div>
-                        <label for="s" style="display: block; margin-bottom: 5px;"><?php _e('Search', 'wc-wallet'); ?></label>
-                        <input type="text" name="s" id="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Order ID or Details', 'wc-wallet'); ?>" />
-                    </div>
+                        <input type="text" name="s" id="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Order ID or Details', 'wc-wallet'); ?>" style="vertical-align: middle;" />
 
-                    <div style="padding-top: 25px;">
-                        <button type="submit" class="button"><?php _e('Filter', 'wc-wallet'); ?></button>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=wc-wallet-transactions')); ?>" class="button"><?php _e('Reset', 'wc-wallet'); ?></a>
-                    </div>
-                </form>
+                        <button type="submit" class="button" style="vertical-align: middle;"><?php _e('Filter', 'wc-wallet'); ?></button>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=wc-wallet-transactions')); ?>" class="button" style="vertical-align: middle;"><?php _e('Reset', 'wc-wallet'); ?></a>
+                    </form>
+                </div>
+                <br class="clear">
             </div>
 
             <!-- Transactions Table -->
