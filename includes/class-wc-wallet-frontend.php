@@ -48,8 +48,8 @@ class WC_Wallet_Frontend {
             ));
         }
 
-        // Enqueue partial payment assets on checkout page
-        if (is_checkout() && !is_wc_endpoint_url('order-received')) {
+        // Enqueue partial payment assets on cart and checkout pages
+        if ((is_cart() || is_checkout()) && !is_wc_endpoint_url('order-received')) {
             wp_enqueue_style(
                 'wc-wallet-partial-payment',
                 WC_WALLET_PLUGIN_URL . 'assets/css/partial-payment.css',

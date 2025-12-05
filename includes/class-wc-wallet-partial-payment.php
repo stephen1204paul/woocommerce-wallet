@@ -45,10 +45,13 @@ class WC_Wallet_Partial_Payment {
     private function init_hooks() {
         // Frontend UI
         add_action('woocommerce_review_order_before_payment', array($this, 'render_partial_payment_section'));
+        add_action('woocommerce_cart_totals_after_order_total', array($this, 'render_partial_payment_section'));
 
         // AJAX handlers
         add_action('wp_ajax_wc_wallet_set_partial_amount', array($this, 'ajax_set_partial_amount'));
         add_action('wp_ajax_nopriv_wc_wallet_set_partial_amount', array($this, 'ajax_set_partial_amount'));
+        add_action('wp_ajax_wc_wallet_get_updated_totals', array($this, 'ajax_get_updated_totals'));
+        add_action('wp_ajax_nopriv_wc_wallet_get_updated_totals', array($this, 'ajax_get_updated_totals'));
 
         // Cart/Checkout modifications
         add_filter('woocommerce_calculated_total', array($this, 'apply_wallet_discount'), 10, 2);
@@ -282,6 +285,79 @@ class WC_Wallet_Partial_Payment {
             'formatted_wallet' => wc_price($amount),
             'formatted_remaining' => wc_price($remaining_total),
             'formatted_cart_total' => wc_price($cart_total)
+        ));
+    }
+
+    /**
+     * AJAX handler to get updated cart totals
+     */
+    public function ajax_get_updated_totals() {
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wc_wallet_partial_nonce')) {
+            wp_send_json_error(array(
+                'message' => __('Security check failed.', 'wc-wallet')
+            ));
+        }
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array(
+                'message' => __('User not logged in.', 'wc-wallet')
+            ));
+        }
+
+        $user_id = get_current_user_id();
+        $wallet_manager = WC_Wallet_Manager::instance();
+        $balance = $wallet_manager->get_wallet_balance($user_id);
+
+        if (!WC()->cart) {
+            wp_send_json_error(array(
+                'message' => __('Cart not found.', 'wc-wallet')
+            ));
+        }
+
+        $cart_total = WC()->cart->get_total('edit');
+        $max_amount = min($balance, $cart_total);
+        $current_amount = $this->get_partial_amount();
+
+        // Adjust current amount if it exceeds new cart total
+        if ($current_amount > $cart_total) {
+            $current_amount = $cart_total;
+            $this->set_partial_amount($current_amount);
+        }
+
+        // Calculate quick amounts
+        $quick_25 = round($max_amount * 0.25, 2);
+        $quick_50 = round($max_amount * 0.50, 2);
+        $quick_75 = round($max_amount * 0.75, 2);
+        $quick_100 = $max_amount;
+
+        // Calculate breakdown
+        $wallet_payment = $current_amount > 0 ? $current_amount : 0;
+        $remaining = $cart_total - $wallet_payment;
+
+        wp_send_json_success(array(
+            'user_balance' => $balance,
+            'cart_total' => $cart_total,
+            'max_amount' => $max_amount,
+            'current_amount' => $current_amount,
+            'wallet_payment' => $wallet_payment,
+            'remaining' => $remaining,
+            'quick_amounts' => array(
+                '25' => $quick_25,
+                '50' => $quick_50,
+                '75' => $quick_75,
+                '100' => $quick_100
+            ),
+            'formatted_balance' => wc_price($balance),
+            'formatted_cart_total' => wc_price($cart_total),
+            'formatted_wallet' => wc_price($wallet_payment),
+            'formatted_remaining' => wc_price($remaining),
+            'formatted_quick_amounts' => array(
+                '25' => wc_price($quick_25),
+                '50' => wc_price($quick_50),
+                '75' => wc_price($quick_75),
+                '100' => wc_price($quick_100)
+            )
         ));
     }
 

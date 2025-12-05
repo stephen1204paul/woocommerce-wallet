@@ -18,6 +18,7 @@
             $(document).on('click', '.wallet-quick-amount', this.handleQuickAmount.bind(this));
             $(document).on('click', '#wallet_partial_clear', this.handleClearAmount.bind(this));
             $(document.body).on('updated_checkout', this.handleCheckoutUpdate.bind(this));
+            $(document.body).on('updated_cart_totals', this.handleCheckoutUpdate.bind(this));
         },
 
         /**
@@ -161,9 +162,83 @@
          * Handle checkout update
          */
         handleCheckoutUpdate: function() {
-            // Re-validate and update UI if needed
-            var currentAmount = $('#wallet_partial_amount').val();
+            // Fetch updated cart totals when checkout updates (e.g., shipping changes)
+            this.fetchUpdatedTotals();
+        },
 
+        /**
+         * Fetch updated cart totals from server
+         */
+        fetchUpdatedTotals: function() {
+            var self = this;
+
+            $.ajax({
+                url: wc_wallet_partial_params.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'wc_wallet_get_updated_totals',
+                    nonce: wc_wallet_partial_params.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.updateTotals(response.data);
+                    }
+                }
+            });
+        },
+
+        /**
+         * Update totals after cart/shipping changes
+         */
+        updateTotals: function(data) {
+            // Update script params with new values
+            wc_wallet_partial_params.user_balance = data.user_balance;
+            wc_wallet_partial_params.cart_total = data.cart_total;
+
+            // Update input field max attribute and value if needed
+            var $input = $('#wallet_partial_amount');
+            $input.attr('max', data.max_amount);
+
+            if (data.current_amount !== parseFloat($input.val())) {
+                $input.val(data.current_amount);
+            }
+
+            // Update quick amount buttons
+            var self = this;
+            $('.wallet-quick-amount').each(function() {
+                var percentage = $(this).data('percentage');
+                var newAmount = data.quick_amounts[percentage];
+                var formattedAmount = data.formatted_quick_amounts[percentage];
+
+                $(this).data('amount', newAmount);
+
+                // Update button text
+                if (percentage === 100) {
+                    $(this).html('Max (' + formattedAmount + ')');
+                } else {
+                    $(this).html(percentage + '% (' + formattedAmount + ')');
+                }
+            });
+
+            // Update breakdown display
+            if (data.formatted_cart_total) {
+                $('.wallet-cart-total').html(data.formatted_cart_total);
+            }
+
+            if (data.formatted_wallet) {
+                $('.wallet-breakdown-amount').html(data.formatted_wallet);
+            }
+
+            if (data.formatted_remaining) {
+                $('.wallet-remaining-amount').html(data.formatted_remaining);
+            }
+
+            if (data.formatted_balance) {
+                $('.wallet-balance-display').html(data.formatted_balance);
+            }
+
+            // Re-validate current amount
+            var currentAmount = $input.val();
             if (currentAmount) {
                 var validation = this.validateAmount(currentAmount);
 

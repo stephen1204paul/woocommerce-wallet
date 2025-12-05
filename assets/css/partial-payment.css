@@ -101,7 +101,7 @@
 
 .wallet-quick-amounts {
     display: flex;
-    gap: 10px;
+    gap: 15px;
     flex-wrap: wrap;
     margin: 20px 0;
 }
@@ -218,11 +218,11 @@
     }
 
     .wallet-quick-amounts {
-        gap: 8px;
+        gap: 12px;
     }
 
     .wallet-quick-amount {
-        flex: 1 1 calc(50% - 8px);
+        flex: 1 1 calc(50% - 12px);
         min-width: auto;
         font-size: 13px;
         padding: 8px 12px;
