@@ -80,6 +80,7 @@ final class WC_Wallet {
         require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-transaction.php';
         require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-topup.php';
         require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-cashback.php';
+        require_once WC_WALLET_PLUGIN_DIR . 'includes/class-wc-wallet-partial-payment.php';
 
         // Admin includes
         if (is_admin()) {
@@ -133,6 +134,9 @@ final class WC_Wallet {
 
         // Initialize cashback
         WC_Wallet_Cashback::instance();
+
+        // Initialize partial payment
+        WC_Wallet_Partial_Payment::instance();
 
         // Initialize frontend
         if (!is_admin()) {

@@ -47,5 +47,49 @@ class WC_Wallet_Frontend {
                 'max_topup' => WC_Wallet_Topup::get_max_amount(),
             ));
         }
+
+        // Enqueue partial payment assets on checkout page
+        if (is_checkout() && !is_wc_endpoint_url('order-received')) {
+            wp_enqueue_style(
+                'wc-wallet-partial-payment',
+                WC_WALLET_PLUGIN_URL . 'assets/css/partial-payment.css',
+                array(),
+                WC_WALLET_VERSION
+            );
+
+            wp_enqueue_script(
+                'wc-wallet-partial-payment',
+                WC_WALLET_PLUGIN_URL . 'assets/js/partial-payment.js',
+                array('jquery', 'wc-checkout'),
+                WC_WALLET_VERSION,
+                true
+            );
+
+            // Get user balance for JS
+            $user_balance = 0;
+            $cart_total = 0;
+
+            if (is_user_logged_in()) {
+                $wallet_manager = WC_Wallet_Manager::instance();
+                $user_balance = $wallet_manager->get_wallet_balance(get_current_user_id());
+            }
+
+            if (WC()->cart) {
+                $cart_total = WC()->cart->get_total('edit');
+            }
+
+            wp_localize_script('wc-wallet-partial-payment', 'wc_wallet_partial_params', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('wc_wallet_partial_nonce'),
+                'currency_symbol' => get_woocommerce_currency_symbol(),
+                'user_balance' => $user_balance,
+                'cart_total' => $cart_total,
+                'i18n' => array(
+                    'amount_too_high' => __('Amount cannot exceed cart total or wallet balance', 'wc-wallet'),
+                    'amount_invalid' => __('Please enter a valid amount', 'wc-wallet'),
+                    'processing' => __('Processing...', 'wc-wallet'),
+                )
+            ));
+        }
     }
 }

@@ -113,6 +113,15 @@ class WC_Wallet_Gateway extends WC_Payment_Gateway {
             return $available_gateways;
         }
 
+        // Hide wallet gateway if partial payment is active
+        if (WC()->session) {
+            $partial_amount = WC()->session->get('wc_partial_wallet_amount', 0);
+            if ($partial_amount > 0) {
+                unset($available_gateways['wallet']);
+                return $available_gateways;
+            }
+        }
+
         // Don't allow wallet payment for wallet top-up orders
         if (WC()->cart) {
             foreach (WC()->cart->get_cart() as $cart_item) {

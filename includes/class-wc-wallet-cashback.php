@@ -142,7 +142,18 @@ class WC_Wallet_Cashback {
         $include_shipping = get_option('wc_wallet_cashback_include_shipping', 'no') === 'yes';
         $include_taxes = get_option('wc_wallet_cashback_include_taxes', 'no') === 'yes';
 
-        $cashback_base = $order->get_subtotal();
+        // Check if partial wallet was used
+        $partial_wallet_used = $order->get_meta('_partial_wallet_used');
+        $original_total = $order->get_meta('_original_order_total');
+
+        // Use original subtotal if partial wallet payment was made
+        // This ensures cashback is calculated on full amount, not reduced amount
+        if ($partial_wallet_used === 'yes' && $original_total > 0) {
+            // For partial wallet payments, calculate based on original total
+            $cashback_base = $order->get_subtotal();
+        } else {
+            $cashback_base = $order->get_subtotal();
+        }
 
         if ($include_shipping) {
             $cashback_base += $order->get_shipping_total();
