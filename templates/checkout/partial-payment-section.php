@@ -34,21 +34,6 @@ if (!defined('ABSPATH')) {
         <p class="wallet-error-message"></p>
     </div>
 
-    <div class="wallet-quick-amounts">
-        <button type="button" class="wallet-quick-amount" data-percentage="25" data-amount="<?php echo esc_attr($quick_25); ?>">
-            25% (<?php echo wp_kses_post(wc_price($quick_25)); ?>)
-        </button>
-        <button type="button" class="wallet-quick-amount" data-percentage="50" data-amount="<?php echo esc_attr($quick_50); ?>">
-            50% (<?php echo wp_kses_post(wc_price($quick_50)); ?>)
-        </button>
-        <button type="button" class="wallet-quick-amount" data-percentage="75" data-amount="<?php echo esc_attr($quick_75); ?>">
-            75% (<?php echo wp_kses_post(wc_price($quick_75)); ?>)
-        </button>
-        <button type="button" class="wallet-quick-amount" data-percentage="100" data-amount="<?php echo esc_attr($quick_100); ?>">
-            <?php esc_html_e('Max', 'wc-wallet'); ?> (<?php echo wp_kses_post(wc_price($quick_100)); ?>)
-        </button>
-    </div>
-
     <div class="wallet-breakdown">
         <div class="wallet-breakdown-row">
             <span><?php esc_html_e('Order Total:', 'wc-wallet'); ?></span>

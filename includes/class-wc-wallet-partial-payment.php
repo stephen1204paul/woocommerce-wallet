@@ -54,7 +54,6 @@ class WC_Wallet_Partial_Payment {
         add_action('wp_ajax_nopriv_wc_wallet_get_updated_totals', array($this, 'ajax_get_updated_totals'));
 
         // Cart/Checkout modifications
-        add_filter('woocommerce_calculated_total', array($this, 'apply_wallet_discount'), 10, 2);
         add_action('woocommerce_cart_calculate_fees', array($this, 'add_wallet_fee_line'), 10, 1);
         add_filter('woocommerce_available_payment_gateways', array($this, 'filter_payment_gateways'), 20);
 
@@ -234,12 +233,6 @@ class WC_Wallet_Partial_Payment {
         $max_amount = min($balance, $cart_total);
         $current_amount = $this->get_partial_amount();
 
-        // Calculate quick amounts
-        $quick_25 = round($max_amount * 0.25, 2);
-        $quick_50 = round($max_amount * 0.50, 2);
-        $quick_75 = round($max_amount * 0.75, 2);
-        $quick_100 = $max_amount;
-
         // Calculate breakdown
         $wallet_payment = $current_amount > 0 ? $current_amount : 0;
         $remaining = $cart_total - $wallet_payment;
@@ -325,12 +318,6 @@ class WC_Wallet_Partial_Payment {
             $this->set_partial_amount($current_amount);
         }
 
-        // Calculate quick amounts
-        $quick_25 = round($max_amount * 0.25, 2);
-        $quick_50 = round($max_amount * 0.50, 2);
-        $quick_75 = round($max_amount * 0.75, 2);
-        $quick_100 = $max_amount;
-
         // Calculate breakdown
         $wallet_payment = $current_amount > 0 ? $current_amount : 0;
         $remaining = $cart_total - $wallet_payment;
@@ -342,40 +329,11 @@ class WC_Wallet_Partial_Payment {
             'current_amount' => $current_amount,
             'wallet_payment' => $wallet_payment,
             'remaining' => $remaining,
-            'quick_amounts' => array(
-                '25' => $quick_25,
-                '50' => $quick_50,
-                '75' => $quick_75,
-                '100' => $quick_100
-            ),
             'formatted_balance' => wc_price($balance),
             'formatted_cart_total' => wc_price($cart_total),
             'formatted_wallet' => wc_price($wallet_payment),
-            'formatted_remaining' => wc_price($remaining),
-            'formatted_quick_amounts' => array(
-                '25' => wc_price($quick_25),
-                '50' => wc_price($quick_50),
-                '75' => wc_price($quick_75),
-                '100' => wc_price($quick_100)
-            )
+            'formatted_remaining' => wc_price($remaining)
         ));
-    }
-
-    /**
-     * Apply wallet discount to cart total
-     *
-     * @param float $total Cart total
-     * @param WC_Cart $cart Cart object
-     * @return float Modified total
-     */
-    public function apply_wallet_discount($total, $cart) {
-        $wallet_amount = $this->get_partial_amount();
-
-        if ($wallet_amount > 0 && $wallet_amount <= $total) {
-            return $total - $wallet_amount;
-        }
-
-        return $total;
     }
 
     /**

@@ -15,7 +15,6 @@
          */
         bindEvents: function() {
             $(document).on('change', '#wallet_partial_amount', this.handleAmountChange.bind(this));
-            $(document).on('click', '.wallet-quick-amount', this.handleQuickAmount.bind(this));
             $(document).on('click', '#wallet_partial_clear', this.handleClearAmount.bind(this));
             $(document.body).on('updated_checkout', this.handleCheckoutUpdate.bind(this));
             $(document.body).on('updated_cart_totals', this.handleCheckoutUpdate.bind(this));
@@ -140,16 +139,6 @@
         },
 
         /**
-         * Handle quick amount button click
-         */
-        handleQuickAmount: function(e) {
-            e.preventDefault();
-            var amount = $(e.currentTarget).data('amount');
-            $('#wallet_partial_amount').val(amount);
-            this.setAmount(amount);
-        },
-
-        /**
          * Handle clear amount button click
          */
         handleClearAmount: function(e) {
@@ -202,23 +191,6 @@
             if (data.current_amount !== parseFloat($input.val())) {
                 $input.val(data.current_amount);
             }
-
-            // Update quick amount buttons
-            var self = this;
-            $('.wallet-quick-amount').each(function() {
-                var percentage = $(this).data('percentage');
-                var newAmount = data.quick_amounts[percentage];
-                var formattedAmount = data.formatted_quick_amounts[percentage];
-
-                $(this).data('amount', newAmount);
-
-                // Update button text
-                if (percentage === 100) {
-                    $(this).html('Max (' + formattedAmount + ')');
-                } else {
-                    $(this).html(percentage + '% (' + formattedAmount + ')');
-                }
-            });
 
             // Update breakdown display
             if (data.formatted_cart_total) {
