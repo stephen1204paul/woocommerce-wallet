@@ -3,7 +3,7 @@
  * Plugin Name: WooCommerce Wallet
  * Plugin URI: https://example.com/woocommerce-wallet
  * Description: A comprehensive wallet system for WooCommerce allowing customers to add funds and use them for purchases.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Stephen Paul
  * Author URI: https://example.com
  * Text Domain: wc-wallet
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('WC_WALLET_VERSION', '1.0.1');
+define('WC_WALLET_VERSION', '1.0.2');
 define('WC_WALLET_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WC_WALLET_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WC_WALLET_PLUGIN_BASENAME', plugin_basename(__FILE__));
