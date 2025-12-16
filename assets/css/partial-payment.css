@@ -242,54 +242,10 @@
     }
 }
 
-/* Dark mode support (optional) */
-@media (prefers-color-scheme: dark) {
-    .wc-wallet-partial-payment-section {
-        background: #2a2a2a;
-        border-color: #444;
-    }
-
-    .wallet-partial-header {
-        border-bottom-color: #444;
-        color: #fff;
-    }
-
-    .wallet-amount-input-group label {
-        color: #ddd;
-    }
-
-    .wallet-amount-input {
-        background: #333;
-        border-color: #555;
-        color: #fff;
-    }
-
-    .wallet-amount-input:focus {
-        border-color: #ff8c00;
-    }
-
-    .wallet-breakdown {
-        background: #333;
-    }
-
-    .wallet-breakdown-row span {
-        color: #aaa;
-    }
-
-    .wallet-breakdown-row strong {
-        color: #fff;
-    }
-
-    .wallet-breakdown-total span,
-    .wallet-breakdown-total strong {
-        color: #fff;
-    }
-}
-
 #wallet_partial_amount{
     max-width: 100%;
 }
 
 .wallet-partial-header span{
-    color: white;
+    color: #333;
 }
