@@ -34,7 +34,7 @@ if (!defined('ABSPATH')) {
         <p class="wallet-error-message"></p>
     </div>
 
-    <div class="wallet-breakdown">
+    <!-- <div class="wallet-breakdown">
         <div class="wallet-breakdown-row">
             <span><?php esc_html_e('Order Total:', 'wc-wallet'); ?></span>
             <strong class="wallet-cart-total"><?php echo wp_kses_post(wc_price($cart_total)); ?></strong>
@@ -55,5 +55,5 @@ if (!defined('ABSPATH')) {
                 <?php esc_html_e('Clear Wallet Payment', 'wc-wallet'); ?>
             </button>
         </div>
-    <?php endif; ?>
+    <?php endif; ?> -->
 </div>
