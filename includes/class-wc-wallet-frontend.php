@@ -82,6 +82,10 @@ class WC_Wallet_Frontend {
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('wc_wallet_partial_nonce'),
                 'currency_symbol' => get_woocommerce_currency_symbol(),
+                'currency_format' => str_replace(array('%1$s', '%2$s'), array('%s', '%v'), get_woocommerce_price_format()),
+                'decimals' => wc_get_price_decimals(),
+                'decimal_separator' => wc_get_price_decimal_separator(),
+                'thousand_separator' => wc_get_price_thousand_separator(),
                 'user_balance' => $user_balance,
                 'cart_total' => $cart_total,
                 'i18n' => array(

@@ -3,6 +3,11 @@
 
     var WC_Wallet_Partial = {
         /**
+         * Flag to prevent infinite loops during sync
+         */
+        isSyncing: false,
+
+        /**
          * Initialize
          */
         init: function() {
@@ -151,6 +156,11 @@
          * Handle checkout update
          */
         handleCheckoutUpdate: function() {
+            // Skip if we're in the middle of syncing to prevent infinite loops
+            if (this.isSyncing) {
+                return;
+            }
+
             // Fetch updated cart totals when checkout updates (e.g., shipping changes)
             this.fetchUpdatedTotals();
         },
@@ -184,29 +194,62 @@
             wc_wallet_partial_params.user_balance = data.user_balance;
             wc_wallet_partial_params.cart_total = data.cart_total;
 
-            // Update input field max attribute and value if needed
+            // Update input field max attribute
             var $input = $('#wallet_partial_amount');
             $input.attr('max', data.max_amount);
 
-            if (data.current_amount !== parseFloat($input.val())) {
+            // Only update the input value if it's empty or exceeds the new maximum
+            var currentInputValue = parseFloat($input.val()) || 0;
+            var preserveUserInput = false;
+
+            // If user has entered an amount and it's within valid limits, keep it
+            // Only update if:
+            // 1. The input is empty/zero, OR
+            // 2. The current input exceeds the new max amount
+            if (currentInputValue === 0 || currentInputValue > data.max_amount) {
                 $input.val(data.current_amount);
+                currentInputValue = data.current_amount;
+            } else {
+                // User's input is being preserved
+                preserveUserInput = true;
             }
 
-            // Update breakdown display
+            // Update cart total display
             if (data.formatted_cart_total) {
                 $('.wallet-cart-total').html(data.formatted_cart_total);
             }
 
-            if (data.formatted_wallet) {
-                $('.wallet-breakdown-amount').html(data.formatted_wallet);
-            }
-
-            if (data.formatted_remaining) {
-                $('.wallet-remaining-amount').html(data.formatted_remaining);
-            }
-
             if (data.formatted_balance) {
                 $('.wallet-balance-display').html(data.formatted_balance);
+            }
+
+            // Update breakdown display based on actual input value
+            // If we preserved user input, recalculate the breakdown
+            if (preserveUserInput && currentInputValue > 0) {
+                var walletAmount = currentInputValue;
+                var remainingAmount = data.cart_total - walletAmount;
+
+                // Format the amounts
+                var currencyFormat = wc_wallet_partial_params.currency_format || '%s%v';
+                var symbol = wc_wallet_partial_params.currency_symbol || '$';
+                var decimals = wc_wallet_partial_params.decimals || 2;
+                var decimalSep = wc_wallet_partial_params.decimal_separator || '.';
+                var thousandSep = wc_wallet_partial_params.thousand_separator || ',';
+
+                var formattedWallet = this.formatPrice(walletAmount, symbol, decimals, thousandSep, decimalSep, currencyFormat);
+                var formattedRemaining = this.formatPrice(remainingAmount, symbol, decimals, thousandSep, decimalSep, currencyFormat);
+
+                $('.wallet-breakdown-amount').html(formattedWallet);
+                $('.wallet-remaining-amount').html(formattedRemaining);
+            } else {
+                // Use server's formatted values
+                if (data.formatted_wallet) {
+                    $('.wallet-breakdown-amount').html(data.formatted_wallet);
+                }
+
+                if (data.formatted_remaining) {
+                    $('.wallet-remaining-amount').html(data.formatted_remaining);
+                }
             }
 
             // Re-validate current amount
@@ -220,6 +263,54 @@
                     this.hideError();
                 }
             }
+
+            // If we preserved user input and it differs from server's current_amount,
+            // sync it to the server to keep session in sync
+            if (preserveUserInput && currentInputValue !== data.current_amount) {
+                this.syncAmountToServer(currentInputValue);
+            }
+        },
+
+        /**
+         * Sync amount to server and update checkout
+         */
+        syncAmountToServer: function(amount) {
+            var self = this;
+            self.isSyncing = true;
+
+            $.ajax({
+                url: wc_wallet_partial_params.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'wc_wallet_set_partial_amount',
+                    amount: amount,
+                    nonce: wc_wallet_partial_params.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Trigger checkout update to recalculate with correct wallet amount
+                        $(document.body).trigger('update_checkout');
+                    }
+                },
+                complete: function() {
+                    // Clear flag after a short delay to ensure update_checkout completes
+                    setTimeout(function() {
+                        self.isSyncing = false;
+                    }, 100);
+                }
+            });
+        },
+
+        /**
+         * Format price for display
+         */
+        formatPrice: function(amount, symbol, decimals, thousandSep, decimalSep, format) {
+            var value = parseFloat(amount).toFixed(decimals);
+            var parts = value.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousandSep);
+            value = parts.join(decimalSep);
+
+            return format.replace('%s', symbol).replace('%v', value);
         },
 
         /**
