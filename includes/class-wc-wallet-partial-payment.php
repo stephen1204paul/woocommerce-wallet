@@ -165,7 +165,7 @@ class WC_Wallet_Partial_Payment {
 
         // Check cart total
         if (WC()->cart) {
-            $cart_total = WC()->cart->get_total('edit');
+            $cart_total = $this->get_cart_total_before_wallet();
 
             if ($amount > $cart_total) {
                 return array(
@@ -199,7 +199,7 @@ class WC_Wallet_Partial_Payment {
         $balance = $wallet_manager->get_wallet_balance($user_id);
 
         if (WC()->cart) {
-            $cart_total = WC()->cart->get_total('edit');
+            $cart_total = $this->get_cart_total_before_wallet();
             return min($balance, $cart_total);
         }
 
@@ -229,7 +229,7 @@ class WC_Wallet_Partial_Payment {
             return;
         }
 
-        $cart_total = WC()->cart->get_total('edit');
+        $cart_total = $this->get_cart_total_before_wallet();
         $max_amount = min($balance, $cart_total);
         $current_amount = $this->get_partial_amount();
 
@@ -268,7 +268,7 @@ class WC_Wallet_Partial_Payment {
         $this->set_partial_amount($amount);
 
         // Get updated totals
-        $cart_total = WC()->cart ? WC()->cart->get_total('edit') : 0;
+        $cart_total = WC()->cart ? $this->get_cart_total_before_wallet() : 0;
         $remaining_total = $cart_total - $amount;
 
         wp_send_json_success(array(
@@ -279,6 +279,43 @@ class WC_Wallet_Partial_Payment {
             'formatted_remaining' => wc_price($remaining_total),
             'formatted_cart_total' => wc_price($cart_total)
         ));
+    }
+
+    /**
+     * Get cart total before wallet fee is applied
+     *
+     * This prevents circular dependency where cart total includes wallet fee,
+     * which is based on the cart total.
+     *
+     * @return float Cart total before wallet deduction
+     */
+    private function get_cart_total_before_wallet() {
+        if (!WC()->cart) {
+            return 0;
+        }
+
+        // Calculate total from components, excluding wallet fee
+        $total = 0;
+
+        // Cart subtotal (includes discounts)
+        $total += WC()->cart->get_subtotal() - WC()->cart->get_discount_total();
+
+        // Add shipping
+        $total += WC()->cart->get_shipping_total();
+
+        // Add taxes
+        $total += WC()->cart->get_total_tax();
+
+        // Add fees (but exclude wallet fee)
+        foreach (WC()->cart->get_fees() as $fee) {
+            // Skip the wallet payment fee
+            if ($fee->name === __('Wallet Payment', 'wc-wallet')) {
+                continue;
+            }
+            $total += $fee->amount;
+        }
+
+        return max(0, $total);
     }
 
     /**
@@ -308,7 +345,8 @@ class WC_Wallet_Partial_Payment {
             ));
         }
 
-        $cart_total = WC()->cart->get_total('edit');
+        // Get cart total BEFORE wallet fee is applied
+        $cart_total = $this->get_cart_total_before_wallet();
         $max_amount = min($balance, $cart_total);
         $current_amount = $this->get_partial_amount();
 
@@ -548,7 +586,7 @@ class WC_Wallet_Partial_Payment {
             return;
         }
 
-        $cart_total = WC()->cart->get_total('edit');
+        $cart_total = $this->get_cart_total_before_wallet();
 
         // If wallet amount exceeds new cart total, adjust it
         if ($wallet_amount > $cart_total) {
