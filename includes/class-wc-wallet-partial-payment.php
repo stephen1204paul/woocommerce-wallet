@@ -289,7 +289,7 @@ class WC_Wallet_Partial_Payment {
      *
      * @return float Cart total before wallet deduction
      */
-    private function get_cart_total_before_wallet() {
+    public function get_cart_total_before_wallet() {
         if (!WC()->cart) {
             return 0;
         }

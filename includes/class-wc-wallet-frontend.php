@@ -75,7 +75,9 @@ class WC_Wallet_Frontend {
             }
 
             if (WC()->cart) {
-                $cart_total = WC()->cart->get_total('edit');
+                // Get cart total BEFORE wallet fee to avoid validation issues
+                $partial_payment = WC_Wallet_Partial_Payment::instance();
+                $cart_total = $partial_payment ? $partial_payment->get_cart_total_before_wallet() : WC()->cart->get_total('edit');
             }
 
             wp_localize_script('wc-wallet-partial-payment', 'wc_wallet_partial_params', array(
