@@ -65,6 +65,11 @@ class WC_Wallet_Partial_Payment {
         // Session management
         add_action('woocommerce_cart_emptied', array($this, 'clear_partial_amount'));
         add_action('woocommerce_cart_updated', array($this, 'handle_cart_update'));
+
+        // Display wallet breakdown on emails, invoices, and receipts
+        add_action('woocommerce_email_order_meta', array($this, 'display_wallet_breakdown_on_email'), 10, 3);
+        add_action('woocommerce_order_details_after_order_table', array($this, 'display_wallet_breakdown_on_order_details'), 10, 1);
+        add_action('woocommerce_admin_order_data_after_billing_address', array($this, 'display_wallet_breakdown_admin'), 10, 1);
     }
 
     /**
@@ -466,8 +471,8 @@ class WC_Wallet_Partial_Payment {
                 sprintf(
                     __('Partial payment for order #%s (%s of %s total)', 'wc-wallet'),
                     $order->get_order_number(),
-                    wc_price($wallet_amount),
-                    wc_price($original_total)
+                    html_entity_decode(wp_strip_all_tags(wc_price($wallet_amount))),
+                    html_entity_decode(wp_strip_all_tags(wc_price($original_total)))
                 ),
                 $order_id
             );
@@ -600,5 +605,162 @@ class WC_Wallet_Partial_Payment {
                 'notice'
             );
         }
+    }
+
+    /**
+     * Display wallet payment breakdown on order emails
+     *
+     * @param WC_Order $order Order object
+     * @param bool $sent_to_admin Whether email is for admin
+     * @param bool $plain_text Whether email is plain text
+     */
+    public function display_wallet_breakdown_on_email($order, $sent_to_admin = false, $plain_text = false) {
+        $wallet_used = $order->get_meta('_partial_wallet_used');
+
+        if ($wallet_used !== 'yes') {
+            return;
+        }
+
+        $wallet_amount = floatval($order->get_meta('_partial_wallet_amount'));
+        $original_total = floatval($order->get_meta('_original_order_total'));
+
+        if ($wallet_amount <= 0) {
+            return;
+        }
+
+        if ($plain_text) {
+            echo "\n" . __('PAYMENT BREAKDOWN', 'wc-wallet') . "\n";
+            echo str_repeat('-', 50) . "\n";
+            echo __('Original Order Total:', 'wc-wallet') . ' ' . wc_price($original_total) . "\n";
+            echo __('Paid from Wallet:', 'wc-wallet') . ' -' . wc_price($wallet_amount) . "\n";
+            echo __('Paid via ', 'wc-wallet') . $order->get_payment_method_title() . ': ' . wc_price($order->get_total()) . "\n";
+            echo str_repeat('-', 50) . "\n\n";
+        } else {
+            ?>
+            <div style="margin: 20px 0; padding: 15px; background-color: #f7f7f7; border: 1px solid #e0e0e0; border-radius: 4px;">
+                <h3 style="margin-top: 0; color: #333; font-size: 16px; border-bottom: 2px solid #0073aa; padding-bottom: 8px;">
+                    <?php esc_html_e('Payment Breakdown', 'wc-wallet'); ?>
+                </h3>
+                <table cellspacing="0" cellpadding="6" style="width: 100%; border: 0;">
+                    <tbody>
+                        <tr>
+                            <td style="text-align: left; padding: 8px; border-bottom: 1px solid #e0e0e0;">
+                                <?php esc_html_e('Original Order Total:', 'wc-wallet'); ?>
+                            </td>
+                            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #e0e0e0;">
+                                <strong><?php echo wp_kses_post(wc_price($original_total)); ?></strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left; padding: 8px; border-bottom: 1px solid #e0e0e0; color: #0073aa;">
+                                <?php esc_html_e('Paid from Wallet:', 'wc-wallet'); ?>
+                            </td>
+                            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #e0e0e0; color: #0073aa;">
+                                <strong>-<?php echo wp_kses_post(wc_price($wallet_amount)); ?></strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left; padding: 8px;">
+                                <?php echo esc_html(sprintf(__('Paid via %s:', 'wc-wallet'), $order->get_payment_method_title())); ?>
+                            </td>
+                            <td style="text-align: right; padding: 8px;">
+                                <strong><?php echo wp_kses_post(wc_price($order->get_total())); ?></strong>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <?php
+        }
+    }
+
+    /**
+     * Display wallet payment breakdown on order details page (customer view)
+     *
+     * @param WC_Order $order Order object
+     */
+    public function display_wallet_breakdown_on_order_details($order) {
+        $wallet_used = $order->get_meta('_partial_wallet_used');
+
+        if ($wallet_used !== 'yes') {
+            return;
+        }
+
+        $wallet_amount = floatval($order->get_meta('_partial_wallet_amount'));
+        $original_total = floatval($order->get_meta('_original_order_total'));
+
+        if ($wallet_amount <= 0) {
+            return;
+        }
+
+        ?>
+        <section class="woocommerce-wallet-payment-breakdown" style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border: 2px solid #0073aa; border-radius: 5px;">
+            <h2 class="woocommerce-order-details__title" style="margin-top: 0; color: #0073aa;">
+                <?php esc_html_e('Payment Breakdown', 'wc-wallet'); ?>
+            </h2>
+            <table class="woocommerce-table woocommerce-table--wallet-breakdown shop_table wallet_breakdown">
+                <tbody>
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Original Order Total:', 'wc-wallet'); ?></th>
+                        <td><?php echo wp_kses_post(wc_price($original_total)); ?></td>
+                    </tr>
+                    <tr style="color: #0073aa;">
+                        <th scope="row"><?php esc_html_e('Paid from Wallet:', 'wc-wallet'); ?></th>
+                        <td><strong>-<?php echo wp_kses_post(wc_price($wallet_amount)); ?></strong></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php echo esc_html(sprintf(__('Paid via %s:', 'wc-wallet'), $order->get_payment_method_title())); ?></th>
+                        <td><strong><?php echo wp_kses_post(wc_price($order->get_total())); ?></strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <?php
+    }
+
+    /**
+     * Display wallet payment breakdown in admin order details
+     *
+     * @param WC_Order $order Order object
+     */
+    public function display_wallet_breakdown_admin($order) {
+        $wallet_used = $order->get_meta('_partial_wallet_used');
+
+        if ($wallet_used !== 'yes') {
+            return;
+        }
+
+        $wallet_amount = floatval($order->get_meta('_partial_wallet_amount'));
+        $original_total = floatval($order->get_meta('_original_order_total'));
+        $transaction_id = $order->get_meta('_partial_wallet_transaction_id');
+
+        if ($wallet_amount <= 0) {
+            return;
+        }
+
+        ?>
+        <div class="wallet-payment-breakdown" style="margin-top: 15px; padding: 12px; background-color: #f0f8ff; border-left: 4px solid #0073aa;">
+            <h4 style="margin-top: 0; color: #0073aa;">
+                <?php esc_html_e('Wallet Payment Breakdown', 'wc-wallet'); ?>
+            </h4>
+            <p style="margin: 5px 0;">
+                <strong><?php esc_html_e('Original Order Total:', 'wc-wallet'); ?></strong>
+                <?php echo wp_kses_post(wc_price($original_total)); ?>
+            </p>
+            <p style="margin: 5px 0; color: #0073aa;">
+                <strong><?php esc_html_e('Paid from Wallet:', 'wc-wallet'); ?></strong>
+                -<?php echo wp_kses_post(wc_price($wallet_amount)); ?>
+                <?php if ($transaction_id) : ?>
+                    <span style="font-size: 0.9em; color: #666;">
+                        (<?php echo esc_html(sprintf(__('Transaction ID: %s', 'wc-wallet'), $transaction_id)); ?>)
+                    </span>
+                <?php endif; ?>
+            </p>
+            <p style="margin: 5px 0;">
+                <strong><?php echo esc_html(sprintf(__('Paid via %s:', 'wc-wallet'), $order->get_payment_method_title())); ?></strong>
+                <?php echo wp_kses_post(wc_price($order->get_total())); ?>
+            </p>
+        </div>
+        <?php
     }
 }
