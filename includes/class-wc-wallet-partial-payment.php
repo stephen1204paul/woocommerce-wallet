@@ -70,6 +70,11 @@ class WC_Wallet_Partial_Payment {
         add_action('woocommerce_email_order_meta', array($this, 'display_wallet_breakdown_on_email'), 10, 3);
         add_action('woocommerce_order_details_after_order_table', array($this, 'display_wallet_breakdown_on_order_details'), 10, 1);
         add_action('woocommerce_admin_order_data_after_billing_address', array($this, 'display_wallet_breakdown_admin'), 10, 1);
+
+        // Register shortcodes for Booster.io and other invoice plugins
+        add_shortcode('wcj_wallet_original_total', array($this, 'shortcode_wallet_original_total'));
+        add_shortcode('wcj_wallet_payment_amount', array($this, 'shortcode_wallet_payment_amount'));
+        add_shortcode('wcj_wallet_breakdown_table', array($this, 'shortcode_wallet_breakdown_table'));
     }
 
     /**
@@ -762,5 +767,117 @@ class WC_Wallet_Partial_Payment {
             </p>
         </div>
         <?php
+    }
+
+    /**
+     * Get order from current context
+     * Used by shortcodes to determine which order to display data for
+     *
+     * @return WC_Order|false Order object or false
+     */
+    private function get_order_from_context() {
+        global $post;
+
+        // Try to get order from global post
+        if (isset($post) && $post instanceof WP_Post) {
+            $order = wc_get_order($post->ID);
+            if ($order) {
+                return $order;
+            }
+        }
+
+        // Try to get order from query vars
+        $order_id = get_query_var('order-received');
+        if ($order_id) {
+            return wc_get_order($order_id);
+        }
+
+        return false;
+    }
+
+    /**
+     * Shortcode: Display original order total before wallet deduction
+     * Usage: [wcj_wallet_original_total]
+     *
+     * @param array $atts Shortcode attributes
+     * @return string Formatted original total or empty string
+     */
+    public function shortcode_wallet_original_total($atts) {
+        $order = $this->get_order_from_context();
+
+        if (!$order) {
+            return '';
+        }
+
+        $wallet_used = $order->get_meta('_partial_wallet_used');
+        if ($wallet_used !== 'yes') {
+            return '';
+        }
+
+        $original_total = floatval($order->get_meta('_original_order_total'));
+        return html_entity_decode(wp_strip_all_tags(wc_price($original_total)));
+    }
+
+    /**
+     * Shortcode: Display wallet payment amount
+     * Usage: [wcj_wallet_payment_amount]
+     *
+     * @param array $atts Shortcode attributes
+     * @return string Formatted wallet amount or empty string
+     */
+    public function shortcode_wallet_payment_amount($atts) {
+        $order = $this->get_order_from_context();
+
+        if (!$order) {
+            return '';
+        }
+
+        $wallet_used = $order->get_meta('_partial_wallet_used');
+        if ($wallet_used !== 'yes') {
+            return '';
+        }
+
+        $wallet_amount = floatval($order->get_meta('_partial_wallet_amount'));
+        return html_entity_decode(wp_strip_all_tags(wc_price($wallet_amount)));
+    }
+
+    /**
+     * Shortcode: Display complete wallet payment breakdown table
+     * Usage: [wcj_wallet_breakdown_table]
+     *
+     * @param array $atts Shortcode attributes
+     * @return string HTML table with breakdown or empty string
+     */
+    public function shortcode_wallet_breakdown_table($atts) {
+        $order = $this->get_order_from_context();
+
+        if (!$order) {
+            return '';
+        }
+
+        $wallet_used = $order->get_meta('_partial_wallet_used');
+        if ($wallet_used !== 'yes') {
+            return '';
+        }
+
+        $wallet_amount = floatval($order->get_meta('_partial_wallet_amount'));
+        $original_total = floatval($order->get_meta('_original_order_total'));
+
+        if ($wallet_amount <= 0) {
+            return '';
+        }
+
+        ob_start();
+        ?>
+        <table class="pdf_invoice_totals_table" style="margin-top: 10px; border-top: 2px solid #0073aa;">
+            <tbody>
+                <tr><th style="color: #0073aa;" colspan="2">PAYMENT BREAKDOWN</th></tr>
+                <tr><th>Original Order Total</th><td><?php echo html_entity_decode(wp_strip_all_tags(wc_price($original_total))); ?></td></tr>
+                <tr><th style="color: #0073aa;">Paid from Wallet</th><td style="color: #0073aa;">-<?php echo html_entity_decode(wp_strip_all_tags(wc_price($wallet_amount))); ?></td></tr>
+                <tr><th>Paid via <?php echo esc_html($order->get_payment_method_title()); ?></th><td><?php echo html_entity_decode(wp_strip_all_tags(wc_price($order->get_total()))); ?></td></tr>
+            </tbody>
+        </table>
+        <?php
+        return ob_get_clean();
     }
 }
