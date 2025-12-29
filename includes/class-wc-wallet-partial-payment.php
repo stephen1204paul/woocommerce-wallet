@@ -773,10 +773,32 @@ class WC_Wallet_Partial_Payment {
      * Get order from current context
      * Used by shortcodes to determine which order to display data for
      *
+     * @param array $atts Shortcode attributes (may contain order_id)
      * @return WC_Order|false Order object or false
      */
-    private function get_order_from_context() {
-        global $post;
+    private function get_order_from_context($atts = array()) {
+        global $post, $wcj_pdf_invoice_order_id, $wcj_order;
+
+        // Try to get order_id from shortcode attributes
+        if (isset($atts['order_id']) && !empty($atts['order_id'])) {
+            $order = wc_get_order($atts['order_id']);
+            if ($order) {
+                return $order;
+            }
+        }
+
+        // Try Booster.io global order object
+        if (isset($wcj_order) && $wcj_order instanceof WC_Order) {
+            return $wcj_order;
+        }
+
+        // Try Booster.io global order ID
+        if (isset($wcj_pdf_invoice_order_id) && !empty($wcj_pdf_invoice_order_id)) {
+            $order = wc_get_order($wcj_pdf_invoice_order_id);
+            if ($order) {
+                return $order;
+            }
+        }
 
         // Try to get order from global post
         if (isset($post) && $post instanceof WP_Post) {
@@ -803,7 +825,8 @@ class WC_Wallet_Partial_Payment {
      * @return string Formatted original total or empty string
      */
     public function shortcode_wallet_original_total($atts) {
-        $order = $this->get_order_from_context();
+        $atts = shortcode_atts(array('order_id' => ''), $atts);
+        $order = $this->get_order_from_context($atts);
 
         if (!$order) {
             return '';
@@ -826,7 +849,8 @@ class WC_Wallet_Partial_Payment {
      * @return string Formatted wallet amount or empty string
      */
     public function shortcode_wallet_payment_amount($atts) {
-        $order = $this->get_order_from_context();
+        $atts = shortcode_atts(array('order_id' => ''), $atts);
+        $order = $this->get_order_from_context($atts);
 
         if (!$order) {
             return '';
@@ -849,7 +873,8 @@ class WC_Wallet_Partial_Payment {
      * @return string HTML table with breakdown or empty string
      */
     public function shortcode_wallet_breakdown_table($atts) {
-        $order = $this->get_order_from_context();
+        $atts = shortcode_atts(array('order_id' => ''), $atts);
+        $order = $this->get_order_from_context($atts);
 
         if (!$order) {
             return '';
