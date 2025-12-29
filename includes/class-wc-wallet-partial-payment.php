@@ -77,6 +77,7 @@ class WC_Wallet_Partial_Payment {
         add_shortcode('wcj_wallet_breakdown_table', array($this, 'shortcode_wallet_breakdown_table'));
         add_shortcode('wcj_wallet_debug', array($this, 'shortcode_wallet_debug'));
         add_shortcode('wcj_order_wallet_payment', array($this, 'shortcode_wallet_payment_amount')); // Alias for compatibility
+        add_shortcode('wcj_wallet_payment_row', array($this, 'shortcode_wallet_payment_row'));
 
         // Hook into Booster.io's shortcode processing to get order ID
         add_filter('wcj_shortcodes_atts', array($this, 'store_booster_order_id'), 10, 2);
@@ -937,6 +938,38 @@ class WC_Wallet_Partial_Payment {
 
         $wallet_amount = floatval($order->get_meta('_partial_wallet_amount'));
         return html_entity_decode(wp_strip_all_tags(wc_price($wallet_amount)));
+    }
+
+    /**
+     * Shortcode: Display wallet payment as a table row
+     * Usage: [wcj_wallet_payment_row]
+     *
+     * @param array $atts Shortcode attributes
+     * @return string HTML table row or empty string
+     */
+    public function shortcode_wallet_payment_row($atts) {
+        $atts = shortcode_atts(array('order_id' => ''), $atts);
+        $order = $this->get_order_from_context($atts);
+
+        if (!$order) {
+            return '';
+        }
+
+        $wallet_used = $order->get_meta('_partial_wallet_used');
+        if ($wallet_used !== 'yes') {
+            return '';
+        }
+
+        $wallet_amount = floatval($order->get_meta('_partial_wallet_amount'));
+
+        if ($wallet_amount <= 0) {
+            return '';
+        }
+
+        // Format to 2 decimal places
+        $formatted_amount = number_format($wallet_amount, 2, '.', '');
+
+        return '<tr><th>Wallet Payment</th><td>- RM' . esc_html($formatted_amount) . '</td></tr>';
     }
 
     /**
