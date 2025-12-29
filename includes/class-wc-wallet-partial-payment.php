@@ -82,9 +82,8 @@ class WC_Wallet_Partial_Payment {
         // Hook into Booster.io's shortcode processing to get order ID
         add_filter('wcj_shortcodes_atts', array($this, 'store_booster_order_id'), 10, 2);
 
-        // Format wallet amounts in final output using regex replacement
-        add_filter('wcj_get_invoice_html', array($this, 'format_wallet_in_invoice_html'), 999, 2);
-        add_filter('the_content', array($this, 'format_wallet_in_content'), 999);
+        // Format wallet metadata values when retrieved
+        add_filter('get_post_metadata', array($this, 'format_wallet_metadata'), 10, 4);
     }
 
     /**
@@ -839,6 +838,40 @@ class WC_Wallet_Partial_Payment {
         }, $html);
 
         return $html;
+    }
+
+    /**
+     * Format wallet metadata values when retrieved
+     * Formats _partial_wallet_amount to 2 decimal places
+     *
+     * @param mixed $value The metadata value (null if not yet retrieved)
+     * @param int $object_id The object/post ID
+     * @param string $meta_key The metadata key
+     * @param bool $single Whether to return a single value
+     * @return mixed Formatted value or original value
+     */
+    public function format_wallet_metadata($value, $object_id, $meta_key, $single) {
+        // Only format our specific wallet amount meta key
+        if ($meta_key !== '_partial_wallet_amount') {
+            return $value;
+        }
+
+        // Remove filter to prevent infinite recursion
+        remove_filter('get_post_metadata', array($this, 'format_wallet_metadata'), 10);
+
+        // Get the actual value from database
+        $actual_value = get_post_meta($object_id, $meta_key, $single);
+
+        // Re-add filter for future calls
+        add_filter('get_post_metadata', array($this, 'format_wallet_metadata'), 10, 4);
+
+        // Format the value if it's numeric
+        if ($actual_value && is_numeric($actual_value)) {
+            error_log("Formatting wallet amount: {$actual_value} to " . number_format((float)$actual_value, 2, '.', ''));
+            return number_format((float)$actual_value, 2, '.', '');
+        }
+
+        return $actual_value;
     }
 
     /**
