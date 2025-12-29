@@ -82,8 +82,8 @@ class WC_Wallet_Partial_Payment {
         // Hook into Booster.io's shortcode processing to get order ID
         add_filter('wcj_shortcodes_atts', array($this, 'store_booster_order_id'), 10, 2);
 
-        // Format wallet amount in Booster meta output
-        add_filter('wcj_order_meta_value', array($this, 'format_wallet_meta_value'), 10, 3);
+        // Format wallet amount in order meta shortcode output
+        add_filter('wcj_order_meta', array($this, 'format_wallet_order_meta'), 10, 2);
     }
 
     /**
@@ -796,17 +796,16 @@ class WC_Wallet_Partial_Payment {
 
     /**
      * Format wallet meta values to 2 decimal places
-     * Filters Booster's order meta output for wallet-related fields
+     * Filters Booster's wcj_order_meta shortcode output
      *
-     * @param string $value The meta value
-     * @param string $meta_key The meta key being displayed
-     * @param int $order_id The order ID
+     * @param string $value The meta value from Booster
+     * @param array $atts The shortcode attributes
      * @return string Formatted value
      */
-    public function format_wallet_meta_value($value, $meta_key, $order_id) {
-        // Format wallet amount and original total to 2 decimal places
-        if (in_array($meta_key, array('_partial_wallet_amount', '_original_order_total'))) {
-            if (is_numeric($value)) {
+    public function format_wallet_order_meta($value, $atts) {
+        // Check if this is a wallet-related meta key
+        if (isset($atts['meta_key']) && in_array($atts['meta_key'], array('_partial_wallet_amount', '_original_order_total'))) {
+            if (is_numeric($value) && !empty($value)) {
                 return number_format((float)$value, 2, '.', '');
             }
         }
