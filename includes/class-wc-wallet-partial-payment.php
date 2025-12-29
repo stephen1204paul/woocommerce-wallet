@@ -82,8 +82,8 @@ class WC_Wallet_Partial_Payment {
         // Hook into Booster.io's shortcode processing to get order ID
         add_filter('wcj_shortcodes_atts', array($this, 'store_booster_order_id'), 10, 2);
 
-        // Format wallet amount in order meta shortcode output
-        add_filter('wcj_order_meta', array($this, 'format_wallet_order_meta'), 10, 2);
+        // Format wallet metadata when retrieved (for Booster compatibility)
+        add_filter('get_post_metadata', array($this, 'format_wallet_metadata'), 10, 4);
     }
 
     /**
@@ -795,21 +795,31 @@ class WC_Wallet_Partial_Payment {
     }
 
     /**
-     * Format wallet meta values to 2 decimal places
-     * Filters Booster's wcj_order_meta shortcode output
+     * Format wallet metadata to 2 decimal places when retrieved
+     * Hooks into WordPress metadata system to format values before Booster displays them
      *
-     * @param string $value The meta value from Booster
-     * @param array $atts The shortcode attributes
-     * @return string Formatted value
+     * @param mixed $value The meta value (null means get from database)
+     * @param int $object_id The object (post/order) ID
+     * @param string $meta_key The meta key being retrieved
+     * @param bool $single Whether to return a single value
+     * @return mixed Formatted value or null to continue normal flow
      */
-    public function format_wallet_order_meta($value, $atts) {
-        // Check if this is a wallet-related meta key
-        if (isset($atts['meta_key']) && in_array($atts['meta_key'], array('_partial_wallet_amount', '_original_order_total'))) {
-            if (is_numeric($value) && !empty($value)) {
+    public function format_wallet_metadata($value, $object_id, $meta_key, $single) {
+        // Only format wallet-related meta keys
+        if (in_array($meta_key, array('_partial_wallet_amount', '_original_order_total'))) {
+            // Let WordPress get the value normally
+            if ($value === null) {
+                $value = get_metadata('post', $object_id, $meta_key, $single);
+            }
+
+            // If it's a single value and numeric, format it
+            if ($single && is_numeric($value) && !empty($value)) {
                 return number_format((float)$value, 2, '.', '');
             }
         }
-        return $value;
+
+        // Return null to let WordPress continue normal processing for other meta keys
+        return null;
     }
 
     /**
