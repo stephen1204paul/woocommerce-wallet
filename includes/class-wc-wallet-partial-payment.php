@@ -915,14 +915,28 @@ class WC_Wallet_Partial_Payment {
      * @return string Debug information
      */
     public function shortcode_wallet_debug($atts) {
-        global $wcj_pdf_invoice_order_id, $wcj_order;
-
         $atts = shortcode_atts(array('order_id' => ''), $atts);
         $order = $this->get_order_from_context($atts);
 
+        // Find all globals that might contain order info
+        $relevant_globals = array();
+        foreach ($GLOBALS as $key => $value) {
+            if (stripos($key, 'order') !== false || stripos($key, 'wcj') !== false) {
+                if (is_object($value) && method_exists($value, 'get_id')) {
+                    $relevant_globals[$key] = 'Object with get_id(): ' . $value->get_id();
+                } elseif (is_numeric($value)) {
+                    $relevant_globals[$key] = 'Numeric: ' . $value;
+                } elseif (is_string($value) && strlen($value) < 100) {
+                    $relevant_globals[$key] = 'String: ' . $value;
+                } elseif (is_array($value)) {
+                    $relevant_globals[$key] = 'Array with ' . count($value) . ' items';
+                }
+            }
+        }
+
         ob_start();
         ?>
-        <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
+        <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9; font-size: 12px;">
             <h4>Wallet Payment Debug Info</h4>
             <p><strong>Order Found:</strong> <?php echo $order ? 'Yes' : 'No'; ?></p>
             <?php if ($order): ?>
@@ -932,8 +946,17 @@ class WC_Wallet_Partial_Payment {
                 <p><strong>Wallet Amount Meta:</strong> <?php echo $order->get_meta('_partial_wallet_amount') ? $order->get_meta('_partial_wallet_amount') : 'Not set'; ?></p>
                 <p><strong>Original Total Meta:</strong> <?php echo $order->get_meta('_original_order_total') ? $order->get_meta('_original_order_total') : 'Not set'; ?></p>
             <?php endif; ?>
-            <p><strong>Global $wcj_pdf_invoice_order_id:</strong> <?php echo isset($wcj_pdf_invoice_order_id) ? $wcj_pdf_invoice_order_id : 'Not set'; ?></p>
-            <p><strong>Global $wcj_order:</strong> <?php echo isset($wcj_order) ? 'Set (Order ID: ' . $wcj_order->get_id() . ')' : 'Not set'; ?></p>
+            <hr>
+            <p><strong>All Order/WCJ Related Globals:</strong></p>
+            <?php if (!empty($relevant_globals)): ?>
+                <ul style="font-size: 11px;">
+                    <?php foreach ($relevant_globals as $key => $value): ?>
+                        <li><code>$<?php echo esc_html($key); ?></code>: <?php echo esc_html($value); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php else: ?>
+                <p>No order-related globals found</p>
+            <?php endif; ?>
         </div>
         <?php
         return ob_get_clean();
