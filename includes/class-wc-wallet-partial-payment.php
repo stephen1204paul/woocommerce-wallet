@@ -82,8 +82,9 @@ class WC_Wallet_Partial_Payment {
         // Hook into Booster.io's shortcode processing to get order ID
         add_filter('wcj_shortcodes_atts', array($this, 'store_booster_order_id'), 10, 2);
 
-        // Format wallet amounts in shortcode output
-        add_filter('do_shortcode_tag', array($this, 'format_wallet_shortcode_output'), 10, 4);
+        // Format wallet amounts in final output using regex replacement
+        add_filter('wcj_get_invoice_html', array($this, 'format_wallet_in_invoice_html'), 999, 2);
+        add_filter('the_content', array($this, 'format_wallet_in_content'), 999);
     }
 
     /**
@@ -795,38 +796,46 @@ class WC_Wallet_Partial_Payment {
     }
 
     /**
-     * Format wallet amounts in wcj_order_meta shortcode output
-     * Runs after Booster processes the shortcode
+     * Format wallet amounts in Booster invoice HTML
+     * Uses regex to find and format wallet payment amounts
      *
-     * @param string $output Shortcode output
-     * @param string $tag Shortcode tag
-     * @param array $attr Shortcode attributes
-     * @param array $m The entire shortcode match
-     * @return string Formatted output
+     * @param string $html The invoice HTML
+     * @param array $args Invoice arguments
+     * @return string Formatted HTML
      */
-    public function format_wallet_shortcode_output($output, $tag, $attr, $m) {
-        // Only process wcj_order_meta shortcode
-        error_log($tag);
-        if ($tag !== 'wcj_order_meta') {
-            error_log('Not wcj_order_meta: ' . $tag);
-            return $output;
-        }
+    public function format_wallet_in_invoice_html($html, $args = array()) {
+        return $this->format_wallet_amounts_in_html($html);
+    }
 
-        // Check if this is for wallet amount meta keys
-        if (!isset($attr['meta_key']) || !in_array($attr['meta_key'], array('_partial_wallet_amount', '_original_order_total'))) {
-            error_log('Not wallet meta key: ' . (isset($attr['meta_key']) ? $attr['meta_key'] : 'none'));
-            return $output;
-        }
+    /**
+     * Format wallet amounts in content
+     *
+     * @param string $content The content
+     * @return string Formatted content
+     */
+    public function format_wallet_in_content($content) {
+        return $this->format_wallet_amounts_in_html($content);
+    }
 
-        // If output is numeric, format to 2 decimal places
-        if (is_numeric($output) && !empty($output)) {
-            error_log('Formatting wallet amount: ' . $output);
-            return number_format((float)$output, 2, '.', '');
-        }
+    /**
+     * Format wallet payment amounts in HTML using regex
+     * Finds patterns like "- RM4" and formats to "- RM4.00"
+     *
+     * @param string $html The HTML content
+     * @return string Formatted HTML
+     */
+    private function format_wallet_amounts_in_html($html) {
+        // Pattern: Wallet Payment row with amount like "- RM4" or "- RM100"
+        // Match: <th>Wallet Payment</th><td>- RM followed by digits
+        $pattern = '/(<th>Wallet Payment<\/th>\s*<td>\s*-\s*RM\s*)(\d+(?:\.\d+)?)/i';
 
-        error_log('Output not numeric or empty: ' . $output);
+        $html = preg_replace_callback($pattern, function($matches) {
+            $amount = $matches[2];
+            $formatted = number_format((float)$amount, 2, '.', '');
+            return $matches[1] . $formatted;
+        }, $html);
 
-        return $output;
+        return $html;
     }
 
     /**
