@@ -778,13 +778,36 @@ class WC_Wallet_Partial_Payment {
      * @return WC_Order|false Order object or false
      */
     private function get_order_from_context($atts = array()) {
-        global $post, $wcj_pdf_invoice_order_id, $wcj_order;
+        global $post, $wcj_pdf_invoice_order_id, $wcj_order, $wcj_pdf_invoice_data;
 
         // Try to get order_id from shortcode attributes
         if (isset($atts['order_id']) && !empty($atts['order_id'])) {
             $order = wc_get_order($atts['order_id']);
             if ($order) {
                 return $order;
+            }
+        }
+
+        // Try Booster.io invoice data array (primary method for PDF invoices)
+        if (isset($wcj_pdf_invoice_data) && is_array($wcj_pdf_invoice_data) && !empty($wcj_pdf_invoice_data)) {
+            // Get the first item from the array
+            $invoice_data = reset($wcj_pdf_invoice_data);
+
+            // Try to get order_id from the invoice data
+            if (isset($invoice_data['order_id']) && !empty($invoice_data['order_id'])) {
+                $order = wc_get_order($invoice_data['order_id']);
+                if ($order) {
+                    return $order;
+                }
+            }
+
+            // Alternative: the array key might be the order ID
+            $order_id = key($wcj_pdf_invoice_data);
+            if ($order_id && is_numeric($order_id)) {
+                $order = wc_get_order($order_id);
+                if ($order) {
+                    return $order;
+                }
             }
         }
 
@@ -915,6 +938,8 @@ class WC_Wallet_Partial_Payment {
      * @return string Debug information
      */
     public function shortcode_wallet_debug($atts) {
+        global $wcj_pdf_invoice_data;
+
         $atts = shortcode_atts(array('order_id' => ''), $atts);
         $order = $this->get_order_from_context($atts);
 
@@ -945,6 +970,13 @@ class WC_Wallet_Partial_Payment {
                 <p><strong>Wallet Used Meta:</strong> <?php echo $order->get_meta('_partial_wallet_used') ? $order->get_meta('_partial_wallet_used') : 'Not set'; ?></p>
                 <p><strong>Wallet Amount Meta:</strong> <?php echo $order->get_meta('_partial_wallet_amount') ? $order->get_meta('_partial_wallet_amount') : 'Not set'; ?></p>
                 <p><strong>Original Total Meta:</strong> <?php echo $order->get_meta('_original_order_total') ? $order->get_meta('_original_order_total') : 'Not set'; ?></p>
+            <?php endif; ?>
+            <hr>
+            <p><strong>Booster.io Invoice Data Structure:</strong></p>
+            <?php if (isset($wcj_pdf_invoice_data) && is_array($wcj_pdf_invoice_data)): ?>
+                <pre style="font-size: 10px; overflow: auto; max-height: 200px;"><?php print_r($wcj_pdf_invoice_data); ?></pre>
+            <?php else: ?>
+                <p>Not available</p>
             <?php endif; ?>
             <hr>
             <p><strong>All Order/WCJ Related Globals:</strong></p>
