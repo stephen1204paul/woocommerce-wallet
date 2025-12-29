@@ -804,6 +804,7 @@ class WC_Wallet_Partial_Payment {
      * @return string Formatted HTML
      */
     public function format_wallet_in_invoice_html($html, $args = array()) {
+        error_log('Formatting wallet amounts in invoice HTML.');
         return $this->format_wallet_amounts_in_html($html);
     }
 
@@ -814,6 +815,7 @@ class WC_Wallet_Partial_Payment {
      * @return string Formatted content
      */
     public function format_wallet_in_content($content) {
+        error_log('Formatting wallet amounts in content.');
         return $this->format_wallet_amounts_in_html($content);
     }
 
@@ -827,6 +829,7 @@ class WC_Wallet_Partial_Payment {
     private function format_wallet_amounts_in_html($html) {
         // Pattern: Wallet Payment row with amount like "- RM4" or "- RM100"
         // Match: <th>Wallet Payment</th><td>- RM followed by digits
+        error_log('Applying regex to format wallet payment amounts.');
         $pattern = '/(<th>Wallet Payment<\/th>\s*<td>\s*-\s*RM\s*)(\d+(?:\.\d+)?)/i';
 
         $html = preg_replace_callback($pattern, function($matches) {
