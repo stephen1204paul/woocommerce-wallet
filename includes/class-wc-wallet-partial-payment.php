@@ -806,19 +806,25 @@ class WC_Wallet_Partial_Payment {
      */
     public function format_wallet_shortcode_output($output, $tag, $attr, $m) {
         // Only process wcj_order_meta shortcode
+        error_log($tag);
         if ($tag !== 'wcj_order_meta') {
+            error_log('Not wcj_order_meta: ' . $tag);
             return $output;
         }
 
         // Check if this is for wallet amount meta keys
         if (!isset($attr['meta_key']) || !in_array($attr['meta_key'], array('_partial_wallet_amount', '_original_order_total'))) {
+            error_log('Not wallet meta key: ' . (isset($attr['meta_key']) ? $attr['meta_key'] : 'none'));
             return $output;
         }
 
         // If output is numeric, format to 2 decimal places
         if (is_numeric($output) && !empty($output)) {
+            error_log('Formatting wallet amount: ' . $output);
             return number_format((float)$output, 2, '.', '');
         }
+
+        error_log('Output not numeric or empty: ' . $output);
 
         return $output;
     }
