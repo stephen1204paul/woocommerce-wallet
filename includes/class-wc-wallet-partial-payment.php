@@ -75,6 +75,7 @@ class WC_Wallet_Partial_Payment {
         add_shortcode('wcj_wallet_original_total', array($this, 'shortcode_wallet_original_total'));
         add_shortcode('wcj_wallet_payment_amount', array($this, 'shortcode_wallet_payment_amount'));
         add_shortcode('wcj_wallet_breakdown_table', array($this, 'shortcode_wallet_breakdown_table'));
+        add_shortcode('wcj_wallet_debug', array($this, 'shortcode_wallet_debug'));
     }
 
     /**
@@ -902,6 +903,38 @@ class WC_Wallet_Partial_Payment {
                 <tr><th>Paid via <?php echo esc_html($order->get_payment_method_title()); ?></th><td><?php echo html_entity_decode(wp_strip_all_tags(wc_price($order->get_total()))); ?></td></tr>
             </tbody>
         </table>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Debug shortcode to troubleshoot Booster.io integration
+     * Usage: [wcj_wallet_debug]
+     *
+     * @param array $atts Shortcode attributes
+     * @return string Debug information
+     */
+    public function shortcode_wallet_debug($atts) {
+        global $wcj_pdf_invoice_order_id, $wcj_order;
+
+        $atts = shortcode_atts(array('order_id' => ''), $atts);
+        $order = $this->get_order_from_context($atts);
+
+        ob_start();
+        ?>
+        <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
+            <h4>Wallet Payment Debug Info</h4>
+            <p><strong>Order Found:</strong> <?php echo $order ? 'Yes' : 'No'; ?></p>
+            <?php if ($order): ?>
+                <p><strong>Order ID:</strong> <?php echo $order->get_id(); ?></p>
+                <p><strong>Order Number:</strong> <?php echo $order->get_order_number(); ?></p>
+                <p><strong>Wallet Used Meta:</strong> <?php echo $order->get_meta('_partial_wallet_used') ? $order->get_meta('_partial_wallet_used') : 'Not set'; ?></p>
+                <p><strong>Wallet Amount Meta:</strong> <?php echo $order->get_meta('_partial_wallet_amount') ? $order->get_meta('_partial_wallet_amount') : 'Not set'; ?></p>
+                <p><strong>Original Total Meta:</strong> <?php echo $order->get_meta('_original_order_total') ? $order->get_meta('_original_order_total') : 'Not set'; ?></p>
+            <?php endif; ?>
+            <p><strong>Global $wcj_pdf_invoice_order_id:</strong> <?php echo isset($wcj_pdf_invoice_order_id) ? $wcj_pdf_invoice_order_id : 'Not set'; ?></p>
+            <p><strong>Global $wcj_order:</strong> <?php echo isset($wcj_order) ? 'Set (Order ID: ' . $wcj_order->get_id() . ')' : 'Not set'; ?></p>
+        </div>
         <?php
         return ob_get_clean();
     }
