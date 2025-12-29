@@ -76,6 +76,13 @@ class WC_Wallet_Partial_Payment {
         add_shortcode('wcj_wallet_payment_amount', array($this, 'shortcode_wallet_payment_amount'));
         add_shortcode('wcj_wallet_breakdown_table', array($this, 'shortcode_wallet_breakdown_table'));
         add_shortcode('wcj_wallet_debug', array($this, 'shortcode_wallet_debug'));
+        add_shortcode('wcj_order_wallet_payment', array($this, 'shortcode_wallet_payment_amount')); // Alias for compatibility
+
+        // Hook into Booster.io's shortcode processing to get order ID
+        add_filter('wcj_shortcodes_atts', array($this, 'store_booster_order_id'), 10, 2);
+
+        // Format wallet amount in Booster meta output
+        add_filter('wcj_order_meta_value', array($this, 'format_wallet_meta_value'), 10, 3);
     }
 
     /**
@@ -771,6 +778,41 @@ class WC_Wallet_Partial_Payment {
     }
 
     /**
+     * Store Booster.io order ID from their shortcode processing
+     * This filter is called by Booster when processing any of their shortcodes
+     *
+     * @param array $atts Shortcode attributes from Booster
+     * @param string $shortcode The shortcode being processed
+     * @return array Unchanged attributes
+     */
+    public function store_booster_order_id($atts, $shortcode) {
+        if (isset($atts['order_id']) && !empty($atts['order_id'])) {
+            // Store the order ID in a class property for our shortcodes to use
+            $this->booster_current_order_id = $atts['order_id'];
+        }
+        return $atts;
+    }
+
+    /**
+     * Format wallet meta values to 2 decimal places
+     * Filters Booster's order meta output for wallet-related fields
+     *
+     * @param string $value The meta value
+     * @param string $meta_key The meta key being displayed
+     * @param int $order_id The order ID
+     * @return string Formatted value
+     */
+    public function format_wallet_meta_value($value, $meta_key, $order_id) {
+        // Format wallet amount and original total to 2 decimal places
+        if (in_array($meta_key, array('_partial_wallet_amount', '_original_order_total'))) {
+            if (is_numeric($value)) {
+                return number_format((float)$value, 2, '.', '');
+            }
+        }
+        return $value;
+    }
+
+    /**
      * Get order from current context
      * Used by shortcodes to determine which order to display data for
      *
@@ -783,6 +825,14 @@ class WC_Wallet_Partial_Payment {
         // Try to get order_id from shortcode attributes
         if (isset($atts['order_id']) && !empty($atts['order_id'])) {
             $order = wc_get_order($atts['order_id']);
+            if ($order) {
+                return $order;
+            }
+        }
+
+        // Try Booster.io order ID stored from their shortcode filter
+        if (isset($this->booster_current_order_id) && !empty($this->booster_current_order_id)) {
+            $order = wc_get_order($this->booster_current_order_id);
             if ($order) {
                 return $order;
             }
