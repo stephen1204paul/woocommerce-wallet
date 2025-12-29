@@ -82,8 +82,8 @@ class WC_Wallet_Partial_Payment {
         // Hook into Booster.io's shortcode processing to get order ID
         add_filter('wcj_shortcodes_atts', array($this, 'store_booster_order_id'), 10, 2);
 
-        // Format wallet metadata when retrieved (for Booster compatibility)
-        add_filter('get_post_metadata', array($this, 'format_wallet_metadata'), 10, 4);
+        // Format wallet amounts in shortcode output
+        add_filter('do_shortcode_tag', array($this, 'format_wallet_shortcode_output'), 10, 4);
     }
 
     /**
@@ -795,38 +795,32 @@ class WC_Wallet_Partial_Payment {
     }
 
     /**
-     * Format wallet metadata to 2 decimal places when retrieved
-     * Hooks into WordPress metadata system to format values before Booster displays them
+     * Format wallet amounts in wcj_order_meta shortcode output
+     * Runs after Booster processes the shortcode
      *
-     * @param mixed $value The meta value (null means get from database)
-     * @param int $object_id The object (post/order) ID
-     * @param string $meta_key The meta key being retrieved
-     * @param bool $single Whether to return a single value
-     * @return mixed Formatted value or null to continue normal flow
+     * @param string $output Shortcode output
+     * @param string $tag Shortcode tag
+     * @param array $attr Shortcode attributes
+     * @param array $m The entire shortcode match
+     * @return string Formatted output
      */
-    public function format_wallet_metadata($value, $object_id, $meta_key, $single) {
-        error_log("Formatting metadata for key: $meta_key");
-        // Only process wallet-related meta keys
-        if (!in_array($meta_key, array('_partial_wallet_amount', '_original_order_total'))) {
-            error_log("Meta key $meta_key not related to wallet. Returning original value.");
-            return $value;
+    public function format_wallet_shortcode_output($output, $tag, $attr, $m) {
+        // Only process wcj_order_meta shortcode
+        if ($tag !== 'wcj_order_meta') {
+            return $output;
         }
 
-        // If value is null, let WordPress get it normally
-        if ($value === null) {
-            error_log("Meta value is null for key $meta_key. Returning null to continue normal flow.");
-            return $value;
+        // Check if this is for wallet amount meta keys
+        if (!isset($attr['meta_key']) || !in_array($attr['meta_key'], array('_partial_wallet_amount', '_original_order_total'))) {
+            return $output;
         }
 
-        // If single value is requested and it's numeric, format it
-        if ($single && is_numeric($value) && !empty($value)) {
-            error_log("Formatting meta value $value for key $meta_key to 2 decimal places.");
-            return number_format((float)$value, 2, '.', '');
+        // If output is numeric, format to 2 decimal places
+        if (is_numeric($output) && !empty($output)) {
+            return number_format((float)$output, 2, '.', '');
         }
 
-        error_log("Meta value for key $meta_key is not formatted. Returning original value.");
-
-        return $value;
+        return $output;
     }
 
     /**
