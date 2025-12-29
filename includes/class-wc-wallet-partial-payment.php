@@ -805,20 +805,26 @@ class WC_Wallet_Partial_Payment {
      * @return mixed Formatted value or null to continue normal flow
      */
     public function format_wallet_metadata($value, $object_id, $meta_key, $single) {
+        error_log("Formatting metadata for key: $meta_key");
         // Only process wallet-related meta keys
         if (!in_array($meta_key, array('_partial_wallet_amount', '_original_order_total'))) {
+            error_log("Meta key $meta_key not related to wallet. Returning original value.");
             return $value;
         }
 
         // If value is null, let WordPress get it normally
         if ($value === null) {
+            error_log("Meta value is null for key $meta_key. Returning null to continue normal flow.");
             return $value;
         }
 
         // If single value is requested and it's numeric, format it
         if ($single && is_numeric($value) && !empty($value)) {
+            error_log("Formatting meta value $value for key $meta_key to 2 decimal places.");
             return number_format((float)$value, 2, '.', '');
         }
+
+        error_log("Meta value for key $meta_key is not formatted. Returning original value.");
 
         return $value;
     }
