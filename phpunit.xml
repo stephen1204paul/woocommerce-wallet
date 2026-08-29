@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="tests/bootstrap.php" colors="true" failOnWarning="true">
+    <testsuites>
+        <testsuite name="wallet">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="WC_WALLET_TEST_DB_HOST" value="127.0.0.1"/>
+        <env name="WC_WALLET_TEST_DB_PORT" value="3306"/>
+        <env name="WC_WALLET_TEST_DB_USER" value="root"/>
+        <env name="WC_WALLET_TEST_DB_PASS" value=""/>
+        <env name="WC_WALLET_TEST_DB_NAME" value="wc_wallet_test"/>
+    </php>
+</phpunit>

@@ -52,15 +52,23 @@ class WC_Wallet_Manager {
             return false;
         }
 
-        // Update balance
+        WC_Wallet_Database::begin_transaction();
+
         $new_balance = WC_Wallet_Database::update_balance($user_id, $amount);
 
         if ($new_balance === false) {
+            WC_Wallet_Database::rollback_transaction();
             return false;
         }
 
-        // Add transaction record
         $transaction_id = WC_Wallet_Database::add_transaction($user_id, 'credit', $amount, $details, $order_id);
+
+        if (!$transaction_id) {
+            WC_Wallet_Database::rollback_transaction();
+            return false;
+        }
+
+        WC_Wallet_Database::commit_transaction();
 
         // Fire action
         do_action('wc_wallet_credited', $user_id, $amount, $new_balance, $transaction_id);
@@ -76,22 +84,24 @@ class WC_Wallet_Manager {
             return false;
         }
 
-        // Check if user has sufficient balance
-        $current_balance = $this->get_wallet_balance($user_id);
+        WC_Wallet_Database::begin_transaction();
 
-        if ($current_balance < $amount) {
-            return new WP_Error('insufficient_balance', __('Insufficient wallet balance.', 'wc-wallet'));
-        }
-
-        // Update balance (debit is negative amount)
+        // Sufficiency is enforced atomically inside update_balance()
         $new_balance = WC_Wallet_Database::update_balance($user_id, -$amount);
 
         if ($new_balance === false) {
+            WC_Wallet_Database::rollback_transaction();
+            return new WP_Error('insufficient_balance', __('Insufficient wallet balance.', 'wc-wallet'));
+        }
+
+        $transaction_id = WC_Wallet_Database::add_transaction($user_id, 'debit', -$amount, $details, $order_id);
+
+        if (!$transaction_id) {
+            WC_Wallet_Database::rollback_transaction();
             return false;
         }
 
-        // Add transaction record
-        $transaction_id = WC_Wallet_Database::add_transaction($user_id, 'debit', -$amount, $details, $order_id);
+        WC_Wallet_Database::commit_transaction();
 
         // Fire action
         do_action('wc_wallet_debited', $user_id, $amount, $new_balance, $transaction_id);

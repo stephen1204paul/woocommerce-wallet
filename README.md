@@ -188,6 +188,22 @@ do_action('wc_wallet_debited', $user_id, $amount, $new_balance, $transaction_id)
 apply_filters('woocommerce_available_payment_gateways', $available_gateways);
 ```
 
+## Testing
+
+The test suite runs against a real MySQL or MariaDB server because the
+behaviour it guards — row locking under concurrent debits, savepoint handling
+inside a caller's transaction — cannot be reproduced with SQLite or mocks.
+
+```bash
+composer install
+WC_WALLET_TEST_DB_PORT=3306 WC_WALLET_TEST_DB_PASS=secret vendor/bin/phpunit
+```
+
+Connection settings (`WC_WALLET_TEST_DB_HOST`, `_PORT`, `_USER`, `_PASS`,
+`_NAME`) default to `127.0.0.1:3306`, `root`, empty password, database
+`wc_wallet_test`. The database is created if it does not exist and its wallet
+tables are dropped and recreated before every test.
+
 ## Requirements
 
 - WordPress 5.8 or higher

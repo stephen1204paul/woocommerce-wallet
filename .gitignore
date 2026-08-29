@@ -30,3 +30,6 @@ yarn-error.log
 *.bak
 *.swp
 *~
+
+.phpunit.result.cache
+.serena/

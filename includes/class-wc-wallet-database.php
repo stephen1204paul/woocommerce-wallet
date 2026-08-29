@@ -32,7 +32,7 @@ class WC_Wallet_Database {
             KEY user_id (user_id),
             KEY type (type),
             KEY order_id (order_id)
-        ) $charset_collate;";
+        ) ENGINE=InnoDB $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
@@ -48,9 +48,66 @@ class WC_Wallet_Database {
             updated_date datetime NOT NULL,
             PRIMARY KEY  (id),
             UNIQUE KEY user_currency (user_id, currency)
-        ) $charset_collate;";
+        ) ENGINE=InnoDB $charset_collate;";
 
         dbDelta($balance_sql);
+    }
+
+    /**
+     * Stack of open wallet transaction scopes: 'transaction' for a real
+     * START TRANSACTION, 'savepoint' when a transaction was already open
+     * (ours or the caller's). A SAVEPOINT rollback never implicitly commits
+     * or discards an outer transaction the way a nested START TRANSACTION would.
+     */
+    private static $transaction_stack = array();
+
+    private static function server_in_transaction() {
+        global $wpdb;
+
+        // @@in_transaction exists on MariaDB only; elsewhere the query fails and we fall back to our own stack.
+        $suppress = $wpdb->suppress_errors(true);
+        $value = $wpdb->get_var('SELECT @@in_transaction');
+        $wpdb->suppress_errors($suppress);
+
+        return $value !== null && (int) $value === 1;
+    }
+
+    public static function begin_transaction() {
+        global $wpdb;
+
+        $depth = count(self::$transaction_stack);
+
+        if ($depth > 0 || self::server_in_transaction()) {
+            $wpdb->query('SAVEPOINT wc_wallet_' . $depth);
+            self::$transaction_stack[] = 'savepoint';
+        } else {
+            $wpdb->query('START TRANSACTION');
+            self::$transaction_stack[] = 'transaction';
+        }
+    }
+
+    public static function commit_transaction() {
+        global $wpdb;
+
+        $scope = array_pop(self::$transaction_stack);
+
+        if ($scope === 'savepoint') {
+            $wpdb->query('RELEASE SAVEPOINT wc_wallet_' . count(self::$transaction_stack));
+        } elseif ($scope === 'transaction') {
+            $wpdb->query('COMMIT');
+        }
+    }
+
+    public static function rollback_transaction() {
+        global $wpdb;
+
+        $scope = array_pop(self::$transaction_stack);
+
+        if ($scope === 'savepoint') {
+            $wpdb->query('ROLLBACK TO SAVEPOINT wc_wallet_' . count(self::$transaction_stack));
+        } elseif ($scope === 'transaction') {
+            $wpdb->query('ROLLBACK');
+        }
     }
 
     /**
@@ -76,6 +133,10 @@ class WC_Wallet_Database {
 
     /**
      * Update user wallet balance
+     *
+     * The guard `balance >= %f` is enforced in the same UPDATE statement as the
+     * deduction so concurrent debits cannot both pass a stale sufficiency check.
+     * Returns false when a debit would take the balance below zero.
      */
     public static function update_balance($user_id, $amount, $currency = null) {
         global $wpdb;
@@ -85,48 +146,42 @@ class WC_Wallet_Database {
         }
 
         $table_name = $wpdb->prefix . 'wc_wallet_balance';
-        $current_balance = self::get_balance($user_id, $currency);
-        $new_balance = $current_balance + $amount;
+        $now = current_time('mysql');
 
-        // Ensure balance doesn't go negative
-        if ($new_balance < 0) {
+        // Ensure a row exists; UNIQUE KEY user_currency makes this idempotent.
+        $wpdb->query($wpdb->prepare(
+            "INSERT IGNORE INTO $table_name (user_id, balance, currency, updated_date) VALUES (%d, 0.00, %s, %s)",
+            $user_id,
+            $currency,
+            $now
+        ));
+
+        if ($amount < 0) {
+            $affected = $wpdb->query($wpdb->prepare(
+                "UPDATE $table_name SET balance = balance - %f, updated_date = %s
+                 WHERE user_id = %d AND currency = %s AND balance >= %f",
+                abs($amount),
+                $now,
+                $user_id,
+                $currency,
+                abs($amount)
+            ));
+        } else {
+            $affected = $wpdb->query($wpdb->prepare(
+                "UPDATE $table_name SET balance = balance + %f, updated_date = %s
+                 WHERE user_id = %d AND currency = %s",
+                $amount,
+                $now,
+                $user_id,
+                $currency
+            ));
+        }
+
+        if ($affected === false || $affected === 0) {
             return false;
         }
 
-        $existing = $wpdb->get_var($wpdb->prepare(
-            "SELECT id FROM $table_name WHERE user_id = %d AND currency = %s",
-            $user_id,
-            $currency
-        ));
-
-        if ($existing) {
-            $wpdb->update(
-                $table_name,
-                array(
-                    'balance' => $new_balance,
-                    'updated_date' => current_time('mysql')
-                ),
-                array(
-                    'user_id' => $user_id,
-                    'currency' => $currency
-                ),
-                array('%f', '%s'),
-                array('%d', '%s')
-            );
-        } else {
-            $wpdb->insert(
-                $table_name,
-                array(
-                    'user_id' => $user_id,
-                    'balance' => $new_balance,
-                    'currency' => $currency,
-                    'updated_date' => current_time('mysql')
-                ),
-                array('%d', '%f', '%s', '%s')
-            );
-        }
-
-        return $new_balance;
+        return self::get_balance($user_id, $currency);
     }
 
     /**
